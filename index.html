@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiLab — Inventaris Laboratorium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Palette — clinical, warm, precise */
+    --ink:       #17191c;
+    --ink-soft:  #4a4e54;
+    --muted:     #868b93;
+    --faint:     #b6bac0;
+    --paper:     #f7f7f4;
+    --surface:   #ffffff;
+    --surface-2: #fbfbf9;
+    --line:      #e7e7e1;
+    --line-soft: #f0f0ea;
+
+    --brand:     #0d7a5f;   /* lab green */
+    --brand-ink: #0a5f4a;
+    --brand-bg:  #e6f4ef;
+
+    --fisika:    #2563eb;  --fisika-bg:  #e8f0fe;
+    --kimia:     #7c3aed;  --kimia-bg:   #f1eafe;
+    --biologi:   #16a34a;  --biologi-bg: #e6f6ec;
+    --komputer:  #ea580c;  --komputer-bg:#fdeee3;
+
+    --danger:    #dc2626;  --danger-bg:  #fdeaea;
+    --warn:      #b45309;  --warn-bg:    #fbf1e0;
+    --ok:        #15803d;  --ok-bg:      #e7f5ec;
+
+    --f-display: 'Space Grotesk', sans-serif;
+    --f-body:    'Inter', sans-serif;
+    --f-mono:    'JetBrains Mono', monospace;
+
+    --r:   8px;
+    --r-lg:14px;
+    --shadow: 0 1px 2px rgba(20,25,30,0.04), 0 4px 16px rgba(20,25,30,0.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--f-body); font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--brand-bg); }
+
+  /* ─── LOGIN ─────────────────────────────────────────── */
+  #login {
+    min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    background:
+      radial-gradient(120% 80% at 50% -20%, rgba(13,122,95,0.07), transparent 60%),
+      var(--paper);
+  }
+  .login-card {
+    width: 100%; max-width: 400px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    box-shadow: var(--shadow); padding: 40px 36px;
+  }
+  .brandmark { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .brandmark .glyph {
+    width: 38px; height: 38px; border-radius: 10px; background: var(--brand);
+    display: grid; place-items: center; color: #fff;
+    font-family: var(--f-display); font-weight: 700; font-size: 18px;
+  }
+  .brandmark .wordmark { font-family: var(--f-display); font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
+  .brandmark .wordmark b { color: var(--brand); font-weight: 700; }
+  .login-title { font-family: var(--f-display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .login-sub { color: var(--muted); font-size: 13px; margin-bottom: 26px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--ink-soft); margin-bottom: 7px; }
+  .input {
+    width: 100%; height: 44px; padding: 0 14px; font-size: 14px; font-family: var(--f-body);
+    color: var(--ink); background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: var(--r); outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .input::placeholder { color: var(--faint); }
+  .input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-bg); background: var(--surface); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 44px; padding: 0 20px; font-family: var(--f-display); font-weight: 600; font-size: 14px;
+    border-radius: var(--r); border: 1px solid transparent; cursor: pointer;
+    transition: background .15s, border-color .15s, transform .05s; white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--brand); color: #fff; width: 100%; }
+  .btn-primary:hover { background: var(--brand-ink); }
+  .btn-ghost { background: var(--surface); color: var(--ink-soft); border-color: var(--line); }
+  .btn-ghost:hover { background: var(--surface-2); border-color: var(--faint); }
+  .btn-sm { height: 36px; padding: 0 14px; font-size: 13px; }
+  .login-msg { min-height: 20px; margin-top: 14px; font-size: 13px; color: var(--danger); text-align: center; }
+
+  /* ─── APP SHELL ─────────────────────────────────────── */
+  #app { display: none; min-height: 100vh; grid-template-columns: 244px 1fr; }
+  .side {
+    position: sticky; top: 0; height: 100vh; background: var(--surface);
+    border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 20px 14px;
+  }
+  .side .brandmark { padding: 0 8px; margin-bottom: 26px; }
+  .nav-group { margin-bottom: 6px; }
+  .nav-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); padding: 10px 10px 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 10px;
+    border: none; background: none; border-radius: var(--r); cursor: pointer;
+    font-family: var(--f-body); font-size: 14px; font-weight: 500; color: var(--ink-soft);
+    text-align: left; transition: background .12s, color .12s; margin-bottom: 1px;
+  }
+  .nav-item:hover { background: var(--surface-2); color: var(--ink); }
+  .nav-item.active { background: var(--brand-bg); color: var(--brand-ink); }
+  .nav-item .ic { width: 18px; height: 18px; flex-shrink: 0; opacity: .85; }
+  .nav-item.active .ic { opacity: 1; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin: 0 4px; }
+  .dot.fisika { background: var(--fisika); }
+  .dot.kimia { background: var(--kimia); }
+  .dot.biologi { background: var(--biologi); }
+  .dot.komputer { background: var(--komputer); }
+  .side-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+  .userbox { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+  .userbox .ava {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--brand-bg); color: var(--brand-ink);
+    display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .userbox .who { min-width: 0; flex: 1; }
+  .userbox .who .n { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .userbox .who .r { font-size: 11px; color: var(--muted); }
+  .icon-btn { border: none; background: none; cursor: pointer; color: var(--muted); padding: 7px; border-radius: 7px; display: grid; place-items: center; transition: background .12s, color .12s; }
+  .icon-btn:hover { background: var(--surface-2); color: var(--ink); }
+  .icon-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
+
+  /* ─── MAIN ──────────────────────────────────────────── */
+  .main { min-width: 0; }
+  .topbar {
+    position: sticky; top: 0; z-index: 20; background: rgba(247,247,244,0.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .topbar .tt { font-family: var(--f-display); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .topbar .ts { font-size: 13px; color: var(--muted); margin-top: 1px; }
+  .content { padding: 26px 32px 60px; max-width: 1180px; }
+  .page { display: none; }
+  .page.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* ─── STAT CARDS ────────────────────────────────────── */
+  .grid { display: grid; gap: 14px; }
+  .stat-row { grid-template-columns: repeat(4, 1fr); margin-bottom: 24px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+    padding: 16px 18px; position: relative; overflow: hidden;
+  }
+  .stat .k { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 10px; }
+  .stat .v { font-family: var(--f-display); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .stat .s { font-size: 12px; color: var(--faint); margin-top: 7px; }
+  .stat .edge { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+
+  /* ─── SECTIONS / ALERTS ─────────────────────────────── */
+  .section { margin-bottom: 26px; }
+  .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .section-head h3 { font-family: var(--f-display); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .count-pill { font-family: var(--f-mono); font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; }
+  .count-pill.danger { background: var(--danger-bg); color: var(--danger); }
+  .count-pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden;
+  }
+  .alert-cols { grid-template-columns: 1fr 1fr; align-items: start; }
+  .alert-list { display: flex; flex-direction: column; }
+  .alert-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-top: 1px solid var(--line-soft); }
+  .alert-item:first-child { border-top: none; }
+  .alert-item .nm { font-weight: 500; font-size: 13.5px; }
+  .alert-item .meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .alert-item .grow { flex: 1; min-width: 0; }
+  .alert-item .qty { font-family: var(--f-mono); font-weight: 600; font-size: 13px; }
+  .alert-item .qty.bad { color: var(--danger); }
+  .alert-item .qty.low { color: var(--warn); }
+
+  /* ─── LAB CHIP / BADGES ─────────────────────────────── */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 99px;
+    font-size: 12px; font-weight: 500; white-space: nowrap;
+  }
+  .chip .cd { width: 7px; height: 7px; border-radius: 50%; }
+  .chip.fisika { background: var(--fisika-bg); color: var(--fisika); } .chip.fisika .cd { background: var(--fisika); }
+  .chip.kimia { background: var(--kimia-bg); color: var(--kimia); } .chip.kimia .cd { background: var(--kimia); }
+  .chip.biologi { background: var(--biologi-bg); color: var(--biologi); } .chip.biologi .cd { background: var(--biologi); }
+  .chip.komputer { background: var(--komputer-bg); color: var(--komputer); } .chip.komputer .cd { background: var(--komputer); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 500; background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--line); }
+  .tag.baik { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+  .tag.rusak { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+
+  /* ─── TOOLBAR ───────────────────────────────────────── */
+  .labtabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+  .labtab {
+    display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 99px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+    font-family: var(--f-body); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .12s;
+  }
+  .labtab:hover { border-color: var(--faint); }
+  .labtab.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .labtab.on .cd { box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+  .labtab .cd { width: 7px; height: 7px; border-radius: 50%; }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search { position: relative; flex: 1; min-width: 220px; }
+  .search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+  .search .input { padding-left: 40px; height: 42px; }
+  .select {
+    height: 42px; padding: 0 34px 0 13px; font-family: var(--f-body); font-size: 13px; color: var(--ink);
+    background: var(--surface) url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23868b93' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border: 1px solid var(--line); border-radius: var(--r); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none;
+  }
+  .select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-bg); }
+
+  /* ─── TABLE ─────────────────────────────────────────── */
+  .table-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--muted); background: var(--surface-2); white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+  tbody td { padding: 13px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface-2); }
+  .cell-name { font-weight: 500; color: var(--ink); white-space: normal; min-width: 180px; }
+  .cell-spec { color: var(--muted); font-size: 12px; }
+  .code { font-family: var(--f-mono); font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+  .num { font-family: var(--f-mono); font-weight: 600; }
+  .num.good { color: var(--ok); }
+  .num.bad { color: var(--danger); }
+  .num.zero { color: var(--faint); }
+  .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+
+  /* ─── EMPTY / LOADING ───────────────────────────────── */
+  .empty { padding: 56px 24px; text-align: center; }
+  .empty .ei { width: 44px; height: 44px; margin: 0 auto 14px; color: var(--faint); }
+  .empty .et { font-family: var(--f-display); font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .empty .es { font-size: 13px; color: var(--muted); }
+  .spin { width: 22px; height: 22px; border: 2.5px solid var(--line); border-top-color: var(--brand); border-radius: 50%; animation: rot .7s linear infinite; margin: 40px auto; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  /* ─── MODAL ─────────────────────────────────────────── */
+  .scrim { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(23,25,28,0.4); backdrop-filter: blur(2px); padding: 24px; overflow-y: auto; }
+  .scrim.open { display: grid; place-items: start center; }
+  .modal {
+    width: 100%; max-width: 560px; margin-top: 5vh; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); overflow: hidden;
+    animation: pop .2s ease;
+  }
+  @keyframes pop { from { opacity: 0; transform: scale(.98) translateY(6px); } to { opacity: 1; transform: none; } }
+  .modal-head { padding: 20px 24px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; justify-content: space-between; }
+  .modal-head h3 { font-family: var(--f-display); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+  .modal-body { padding: 22px 24px; }
+  .modal-foot { padding: 16px 24px; border-top: 1px solid var(--line-soft); display: flex; justify-content: flex-end; gap: 10px; background: var(--surface-2); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .fl { display: block; font-size: 12px; font-weight: 500; color: var(--ink-soft); margin-bottom: 6px; }
+  .fl .req { color: var(--danger); }
+  .hint { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+  .input.mono { font-family: var(--f-mono); }
+  .input[readonly] { background: var(--surface-2); color: var(--muted); cursor: default; }
+  textarea.input { height: auto; padding: 11px 14px; resize: vertical; min-height: 44px; }
+  .check { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-soft); cursor: pointer; user-select: none; }
+  .check input { width: 16px; height: 16px; accent-color: var(--brand); cursor: pointer; }
+
+  /* ─── HISTORY TIMELINE (in modal) ───────────────────── */
+  .hist { display: flex; flex-direction: column; }
+  .hrow { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+  .hrow:first-child { border-top: none; }
+  .hbadge { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
+  .hbadge.masuk { background: var(--ok-bg); color: var(--ok); }
+  .hbadge.keluar { background: var(--danger-bg); color: var(--danger); }
+  .hrow .hg { flex: 1; }
+  .hrow .ht { font-size: 13px; font-weight: 500; }
+  .hrow .hm { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .hrow .hq { font-family: var(--f-mono); font-weight: 600; font-size: 13px; white-space: nowrap; }
+  .hrow .hq.masuk { color: var(--ok); }
+  .hrow .hq.keluar { color: var(--danger); }
+
+  /* ─── TOAST ─────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 500;
+    z-index: 90; opacity: 0; transition: all .25s cubic-bezier(.2,.8,.2,1); pointer-events: none;
+    display: flex; align-items: center; gap: 9px; box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast .ti { width: 18px; height: 18px; }
+  #toast.ok .ti { color: #4ade80; }
+  #toast.err .ti { color: #f87171; }
+
+  /* ─── RESPONSIVE ────────────────────────────────────── */
+  @media (max-width: 860px) {
+    #app { grid-template-columns: 1fr; }
+    .side {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 244px; z-index: 50;
+      transform: translateX(-100%); transition: transform .25s; box-shadow: var(--shadow);
+    }
+    .side.open { transform: none; }
+    .scrim-nav { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 45; }
+    .scrim-nav.open { display: block; }
+    .menu-btn { display: grid !important; }
+    .content { padding: 20px 18px 60px; }
+    .topbar { padding: 16px 18px; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .alert-cols { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+  .menu-btn { display: none; }
+</style>
+<!-- SheetJS untuk export Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login">
+  <div class="login-card">
+    <div class="brandmark">
+      <div class="glyph">Si</div>
+      <div class="wordmark">Si<b>Lab</b></div>
+    </div>
+    <div class="login-title">Masuk ke akun</div>
+    <div class="login-sub">Sistem Inventaris Laboratorium · SMA Daniel Creative</div>
+    <div class="field">
+      <label for="in-email">Email</label>
+      <input class="input" id="in-email" type="email" placeholder="nama@silab.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="in-pass">Kata sandi</label>
+      <input class="input" id="in-pass" type="password" placeholder="Masukkan kata sandi" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="btn-login" style="margin-top:8px;">Masuk</button>
+    <div class="login-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <div class="scrim-nav" id="scrim-nav"></div>
+  <aside class="side" id="side">
+    <div class="brandmark">
+      <div class="glyph">Si</div>
+      <div class="wordmark">Si<b>Lab</b></div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-item active" data-nav="dashboard">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-nav="inventaris">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Inventaris
+      </button>
+      <button class="nav-item" data-nav="riwayat">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+        Riwayat
+      </button>
+    </div>
+
+    <div class="nav-group" id="nav-labs">
+      <div class="nav-label">Laboratorium</div>
+      <button class="nav-item" data-nav="inventaris" data-lab="fisika"><span class="dot fisika"></span> Fisika</button>
+      <button class="nav-item" data-nav="inventaris" data-lab="kimia"><span class="dot kimia"></span> Kimia</button>
+      <button class="nav-item" data-nav="inventaris" data-lab="biologi"><span class="dot biologi"></span> Biologi</button>
+      <button class="nav-item" data-nav="inventaris" data-lab="komputer"><span class="dot komputer"></span> Komputer</button>
+    </div>
+
+    <div class="side-foot">
+      <div class="userbox">
+        <div class="ava" id="u-ava">–</div>
+        <div class="who"><div class="n" id="u-name">—</div><div class="r">Petugas lab</div></div>
+        <button class="icon-btn danger" id="btn-logout" title="Keluar">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="icon-btn menu-btn" id="btn-menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+        <div>
+          <div class="tt" id="pg-title">Dashboard</div>
+          <div class="ts" id="pg-sub">—</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btn-quick-add" style="width:auto;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+        Tambah barang
+      </button>
+    </div>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <section class="page active" id="p-dashboard">
+        <div class="grid stat-row">
+          <div class="stat"><div class="edge" style="background:var(--brand)"></div><div class="k">Total barang</div><div class="v" id="s-total">—</div><div class="s">seluruh laboratorium</div></div>
+          <div class="stat"><div class="edge" style="background:var(--ok)"></div><div class="k">Kondisi baik</div><div class="v" id="s-baik" style="color:var(--ok)">—</div><div class="s">unit siap pakai</div></div>
+          <div class="stat"><div class="edge" style="background:var(--danger)"></div><div class="k">Perlu perbaikan</div><div class="v" id="s-rusak" style="color:var(--danger)">—</div><div class="s">unit rusak tercatat</div></div>
+          <div class="stat"><div class="edge" style="background:var(--warn)"></div><div class="k">Transaksi hari ini</div><div class="v" id="s-trx" style="color:var(--warn)">—</div><div class="s">masuk & keluar</div></div>
+        </div>
+
+        <div class="grid alert-cols section">
+          <div>
+            <div class="section-head">
+              <h3>Bahan menipis</h3>
+              <span class="count-pill warn" id="c-menipis">0</span>
+            </div>
+            <div class="card"><div class="alert-list" id="list-menipis"></div></div>
+          </div>
+          <div>
+            <div class="section-head">
+              <h3>Barang rusak</h3>
+              <span class="count-pill danger" id="c-rusak">0</span>
+            </div>
+            <div class="card"><div class="alert-list" id="list-rusak"></div></div>
+          </div>
+        </div>
+
+        <div class="section" id="sebaran">
+          <div class="section-head"><h3>Sebaran per laboratorium</h3></div>
+          <div class="grid stat-row" style="margin-bottom:0;">
+            <div class="stat"><div class="edge" style="background:var(--fisika)"></div><div class="k">Fisika</div><div class="v" style="color:var(--fisika)" id="s-fisika">—</div><div class="s">item terdaftar</div></div>
+            <div class="stat"><div class="edge" style="background:var(--kimia)"></div><div class="k">Kimia</div><div class="v" style="color:var(--kimia)" id="s-kimia">—</div><div class="s">item terdaftar</div></div>
+            <div class="stat"><div class="edge" style="background:var(--biologi)"></div><div class="k">Biologi</div><div class="v" style="color:var(--biologi)" id="s-biologi">—</div><div class="s">item terdaftar</div></div>
+            <div class="stat"><div class="edge" style="background:var(--komputer)"></div><div class="k">Komputer</div><div class="v" style="color:var(--komputer)" id="s-komputer">—</div><div class="s">item terdaftar</div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h3>Transaksi terbaru</h3></div>
+          <div class="card"><div id="dash-recent"></div></div>
+        </div>
+      </section>
+
+      <!-- INVENTARIS -->
+      <section class="page" id="p-inventaris">
+        <div class="labtabs" id="labtabs">
+          <button class="labtab on" data-lab="all">Semua lab</button>
+          <button class="labtab" data-lab="fisika"><span class="cd" style="background:var(--fisika)"></span>Fisika</button>
+          <button class="labtab" data-lab="kimia"><span class="cd" style="background:var(--kimia)"></span>Kimia</button>
+          <button class="labtab" data-lab="biologi"><span class="cd" style="background:var(--biologi)"></span>Biologi</button>
+          <button class="labtab" data-lab="komputer"><span class="cd" style="background:var(--komputer)"></span>Komputer</button>
+        </div>
+        <div class="toolbar">
+          <div class="search">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input class="input" id="q-search" placeholder="Cari nama, kode, atau merk…">
+          </div>
+          <select class="select" id="q-golongan"><option value="">Semua golongan</option><option>Barang</option><option>Alat</option><option>Bahan</option></select>
+          <select class="select" id="q-kondisi"><option value="">Semua kondisi</option><option value="baik">Baik</option><option value="rusak">Ada rusak</option></select>
+          <button class="btn btn-ghost btn-sm" id="btn-export-inv" style="width:auto;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+            Export Excel
+          </button>
+          <button class="btn btn-ghost btn-sm" id="btn-import-inv" style="width:auto;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+            Import Excel
+          </button>
+          <input type="file" id="file-import" accept=".xlsx,.xls" style="display:none;">
+        </div>
+        <div class="table-card">
+          <div class="table-scroll">
+            <table>
+              <thead><tr>
+                <th>No. Induk</th><th>Nama barang</th><th>Golongan</th><th>Lab</th>
+                <th>Merk / ukuran</th><th>Baik</th><th>Rusak</th><th>Lokasi</th><th></th>
+              </tr></thead>
+              <tbody id="tb-inventaris"><tr><td colspan="9"><div class="spin"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIWAYAT -->
+      <section class="page" id="p-riwayat">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+          <div class="labtabs" id="labtabs-r" style="margin-bottom:0;">
+            <button class="labtab on" data-lab="all">Semua lab</button>
+            <button class="labtab" data-lab="fisika"><span class="cd" style="background:var(--fisika)"></span>Fisika</button>
+            <button class="labtab" data-lab="kimia"><span class="cd" style="background:var(--kimia)"></span>Kimia</button>
+            <button class="labtab" data-lab="biologi"><span class="cd" style="background:var(--biologi)"></span>Biologi</button>
+            <button class="labtab" data-lab="komputer"><span class="cd" style="background:var(--komputer)"></span>Komputer</button>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-ghost btn-sm" id="btn-export-riw" style="width:auto;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+              Export Excel
+            </button>
+            <button class="btn btn-ghost btn-sm" id="btn-trx" style="width:auto;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Catat transaksi
+            </button>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-scroll">
+            <table>
+              <thead><tr>
+                <th>Tanggal</th><th>Tipe</th><th>Barang</th><th>Lab</th><th>Jumlah</th><th>Keterangan</th><th>Petugas</th>
+              </tr></thead>
+              <tbody id="tb-riwayat"><tr><td colspan="7"><div class="spin"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: BARANG ═══ -->
+<div class="scrim" id="m-barang">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="m-barang-title">Tambah barang</h3>
+      <button class="icon-btn" data-close><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="full">
+          <label class="fl">Nama barang / alat / bahan <span class="req">*</span></label>
+          <input class="input" id="b-nama" placeholder="mis. Gelas Beaker 250 mL">
+        </div>
+        <div id="row-lab">
+          <label class="fl">Laboratorium <span class="req">*</span></label>
+          <select class="select input" id="b-lab" style="width:100%;">
+            <option value="fisika">Fisika</option><option value="kimia">Kimia</option>
+            <option value="biologi">Biologi</option><option value="komputer">Komputer</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Golongan</label>
+          <select class="select input" id="b-golongan" style="width:100%;"><option>Barang</option><option>Alat</option><option>Bahan</option></select>
+        </div>
+        <div>
+          <label class="fl">No. Induk</label>
+          <input class="input mono" id="b-induk" readonly>
+          <div class="hint">Dibuat otomatis dari kode lab + nomor urut</div>
+        </div>
+        <div>
+          <label class="fl">No. Kode</label>
+          <input class="input mono" id="b-kode" readonly>
+          <div class="hint">Dibuat otomatis dari golongan + huruf lab</div>
+        </div>
+        <div>
+          <label class="fl">Merk</label>
+          <input class="input" id="b-merk" placeholder="opsional">
+        </div>
+        <div>
+          <label class="fl">Ukuran / spesifikasi</label>
+          <input class="input" id="b-ukuran" placeholder="opsional">
+        </div>
+        <div>
+          <label class="fl">Jumlah baik</label>
+          <input class="input" id="b-baik" type="number" min="0" value="0">
+        </div>
+        <div>
+          <label class="fl">Jumlah rusak</label>
+          <input class="input" id="b-rusak" type="number" min="0" value="0">
+        </div>
+        <div>
+          <label class="fl">Lokasi penyimpanan</label>
+          <input class="input" id="b-lokasi" placeholder="mis. Lemari 1">
+        </div>
+        <div>
+          <label class="fl">Tanggal masuk</label>
+          <input class="input" id="b-tanggal" type="date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close style="width:auto;">Batal</button>
+      <button class="btn btn-primary btn-sm" id="b-save" style="width:auto;">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: TRANSAKSI ═══ -->
+<div class="scrim" id="m-trx">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Catat transaksi</h3>
+      <button class="icon-btn" data-close><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div>
+          <label class="fl">Tipe</label>
+          <select class="select input" id="t-tipe" style="width:100%;"><option value="masuk">Penerimaan (masuk)</option><option value="keluar">Pengeluaran (keluar)</option></select>
+        </div>
+        <div>
+          <label class="fl">Tanggal</label>
+          <input class="input" id="t-tanggal" type="date">
+        </div>
+        <div class="full">
+          <label class="fl">Barang <span class="req">*</span></label>
+          <select class="select input" id="t-barang" style="width:100%;"><option value="">— Pilih barang —</option></select>
+        </div>
+        <div>
+          <label class="fl">Jumlah <span class="req">*</span></label>
+          <input class="input" id="t-jumlah" type="number" min="1" value="1">
+        </div>
+        <div>
+          <label class="fl">Satuan</label>
+          <input class="input" id="t-satuan" placeholder="unit / botol / mL">
+        </div>
+        <div class="full">
+          <label class="fl">Keterangan</label>
+          <input class="input" id="t-ket" placeholder="mis. Dipinjam kelas X untuk praktikum">
+        </div>
+        <div class="full">
+          <label class="check"><input type="checkbox" id="t-auto" checked> Perbarui stok baik otomatis</label>
+          <div class="hint">Masuk menambah stok, keluar mengurangi stok pada barang terkait.</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close style="width:auto;">Batal</button>
+      <button class="btn btn-primary btn-sm" id="t-save" style="width:auto;">Simpan transaksi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: RIWAYAT BARANG ═══ -->
+<div class="scrim" id="m-hist">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-head">
+      <h3 id="hist-title">Riwayat barang</h3>
+      <button class="icon-btn" data-close><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body" id="hist-body"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIREBASE
+     ═══════════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, Timestamp, serverTimestamp, runTransaction, writeBatch }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+/* ╔═══════════════════════════════════════════════════════════╗
+   ║  1. GANTI DENGAN KONFIGURASI FIREBASE MILIKMU              ║
+   ║     Firebase Console → ⚙ Project settings → Your apps      ║
+   ╚═══════════════════════════════════════════════════════════╝ */
+const firebaseConfig = {
+  apiKey: "GANTI_API_KEY",
+  authDomain: "GANTI_PROJECT_ID.firebaseapp.com",
+  projectId: "GANTI_PROJECT_ID",
+  storageBucket: "GANTI_PROJECT_ID.appspot.com",
+  messagingSenderId: "GANTI_SENDER_ID",
+  appId: "GANTI_APP_ID"
+};
+
+/* Ambang batas stok bahan dianggap menipis (ubah sesuai kebutuhan) */
+const STOK_MINIMUM_BAHAN = 3;
+
+/* ╔═══════════════════════════════════════════════════════════╗
+   ║  2. DAFTAR PENGGUNA & PERAN                                ║
+   ║  Cocokkan email (huruf kecil) dengan lab yang jadi         ║
+   ║  tanggung jawabnya. "admin" melihat semua lab.             ║
+   ║  Email yang tidak terdaftar di sini otomatis jadi admin.   ║
+   ╚═══════════════════════════════════════════════════════════╝ */
+const PENGGUNA = {
+  "admin@silab.com":    { peran: "admin" },
+  "fisika@silab.com":   { peran: "lab", lab: "fisika"   },
+  "kimia@silab.com":    { peran: "lab", lab: "kimia"    },
+  "biologi@silab.com":  { peran: "lab", lab: "biologi"  },
+  "komputer@silab.com": { peran: "lab", lab: "komputer" },
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const LAB = {
+  fisika:   { nama: "Fisika",   prefix: "FIS", letter: "F" },
+  kimia:    { nama: "Kimia",    prefix: "KIM", letter: "K" },
+  biologi:  { nama: "Biologi",  prefix: "BIO", letter: "B" },
+  komputer: { nama: "Komputer", prefix: "KOM", letter: "C" },
+};
+
+/* prefix No. Kode berdasarkan golongan */
+const GOL = { Barang: "BRG", Alat: "ALT", Bahan: "BHN" };
+
+/* ── state ── */
+let me = null;
+let myLab = null;   // null = admin (semua lab); jika diisi = hanya lab tsb
+let barang = [];
+let riwayat = [];
+let editId = null;
+let labFilter = "all";
+let labFilterR = "all";
+
+/* ── util ── */
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const el = (t, c) => barang.filter(b => b.lab === t);
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : "";
+const HARI = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+const BLN  = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return `${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`;
+}
+function todayISO() { return new Date().toISOString().split("T")[0]; }
+function longDate() { const d = new Date(); return `${HARI[d.getDay()]}, ${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`; }
+
+function toast(msg, kind = "ok") {
+  const t = $("#toast");
+  const icon = kind === "ok"
+    ? '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>'
+    : '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>';
+  t.innerHTML = icon + `<span>${msg}</span>`;
+  t.className = "show " + kind;
+  clearTimeout(t._h); t._h = setTimeout(() => t.className = "", 2800);
+}
+
+/* ── auto No. Induk (max suffix + 1, aman dari hapus data) ── */
+function nextInduk(lab) {
+  const p = LAB[lab].prefix;
+  const re = new RegExp(`^${p}-(\\d+)$`);
+  let max = 0;
+  barang.filter(b => b.lab === lab).forEach(b => {
+    const m = (b.noInduk || "").match(re);
+    if (m) max = Math.max(max, +m[1]);
+  });
+  return `${p}-${String(max + 1).padStart(3, "0")}`;
+}
+
+/* ── auto No. Kode: prefix golongan + huruf lab + urutan (mis. ALT-F01) ── */
+function nextKode(lab, golongan) {
+  const gp = GOL[golongan] || "BRG";
+  const ll = LAB[lab].letter;
+  const re = new RegExp(`^${gp}-${ll}(\\d+)$`);
+  let max = 0;
+  barang.filter(b => b.lab === lab && b.golongan === golongan).forEach(b => {
+    const m = (b.noKode || "").match(re);
+    if (m) max = Math.max(max, +m[1]);
+  });
+  return `${gp}-${ll}${String(max + 1).padStart(2, "0")}`;
+}
+
+/* ════════════ AUTH ════════════ */
+$("#btn-login").onclick = doLogin;
+$("#in-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+$("#in-email").addEventListener("keydown", e => { if (e.key === "Enter") $("#in-pass").focus(); });
+
+async function doLogin() {
+  const email = $("#in-email").value.trim();
+  const pass  = $("#in-pass").value;
+  const msg = $("#login-msg");
+  msg.textContent = "";
+  if (!email || !pass) { msg.textContent = "Email dan kata sandi wajib diisi."; return; }
+  const btn = $("#btn-login"); btn.textContent = "Memeriksa…";
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    const map = {
+      "auth/invalid-credential": "Email atau kata sandi salah.",
+      "auth/invalid-email": "Format email tidak valid.",
+      "auth/user-not-found": "Akun tidak ditemukan.",
+      "auth/wrong-password": "Kata sandi salah.",
+      "auth/too-many-requests": "Terlalu banyak percobaan. Coba lagi nanti.",
+      "auth/network-request-failed": "Gagal terhubung. Periksa koneksi internet.",
+    };
+    msg.textContent = map[e.code] || "Gagal masuk. Periksa kembali data Anda.";
+  } finally { btn.textContent = "Masuk"; }
+}
+
+$("#btn-logout").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    me = user;
+    $("#login").style.display = "none";
+    $("#app").style.display = "grid";
+    const nm = (user.email || "").split("@")[0];
+    $("#u-name").textContent = nm;
+    $("#u-ava").textContent = (nm[0] || "?").toUpperCase();
+    applyScope(user.email);
+    listen();
+  } else {
+    me = null;
+    $("#login").style.display = "grid";
+    $("#app").style.display = "none";
+    $("#in-email").value = ""; $("#in-pass").value = "";
+  }
+});
+
+/* ── terapkan peran: admin (semua) atau penanggung jawab satu lab ── */
+function applyScope(email) {
+  const u = PENGGUNA[(email || "").toLowerCase()];
+  myLab = (u && u.peran === "lab") ? u.lab : null;
+  const isLab = !!myLab;
+
+  // sidebar: sembunyikan grup pilihan lab bagi penanggung jawab tunggal
+  $("#nav-labs").style.display = isLab ? "none" : "";
+  $(".userbox .r").textContent = isLab ? `Penanggung jawab ${LAB[myLab].nama}` : "Administrator";
+
+  // tab filter lab di halaman inventaris & riwayat
+  $("#labtabs").style.display  = isLab ? "none" : "";
+  $("#labtabs-r").style.display = isLab ? "none" : "";
+
+  // sebaran per-lab di dashboard hanya relevan untuk admin
+  $("#sebaran").style.display = isLab ? "none" : "";
+
+  // baris pemilih lab di form tambah barang
+  $("#row-lab").style.display = isLab ? "none" : "";
+
+  // kunci filter ke lab sendiri
+  labFilter  = isLab ? myLab : "all";
+  labFilterR = isLab ? myLab : "all";
+  syncLabTabs();
+  $$("#labtabs-r .labtab").forEach(x => x.classList.toggle("on", x.dataset.lab === labFilterR));
+}
+
+/* basis data sesuai peran (penanggung jawab lab hanya melihat lab-nya) */
+function myBarang()  { return myLab ? barang.filter(b => b.lab === myLab)  : barang; }
+function myRiwayat() { return myLab ? riwayat.filter(r => r.lab === myLab) : riwayat; }
+
+/* ════════════ NAV ════════════ */
+const TITLES = {
+  dashboard: ["Dashboard", longDate()],
+  inventaris: ["Inventaris", "Kelola barang, alat, dan bahan laboratorium"],
+  riwayat: ["Riwayat", "Catatan penerimaan dan pengeluaran barang"],
+};
+function go(page) {
+  $$(".page").forEach(p => p.classList.remove("active"));
+  $("#p-" + page).classList.add("active");
+  $("#pg-title").textContent = TITLES[page][0];
+  $("#pg-sub").textContent = TITLES[page][1];
+  $("#btn-quick-add").style.display = page === "riwayat" ? "none" : "";
+  closeNav();
+}
+$$(".nav-item").forEach(b => b.onclick = () => {
+  $$(".nav-item").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  go(b.dataset.nav);
+  if (b.dataset.lab) { labFilter = b.dataset.lab; syncLabTabs(); renderInv(); }
+  else if (b.dataset.nav === "inventaris") { labFilter = myLab || "all"; syncLabTabs(); renderInv(); }
+});
+
+/* mobile nav */
+$("#btn-menu").onclick = () => { $("#side").classList.add("open"); $("#scrim-nav").classList.add("open"); };
+$("#scrim-nav").onclick = closeNav;
+function closeNav() { $("#side").classList.remove("open"); $("#scrim-nav").classList.remove("open"); }
+
+/* ════════════ LAB TABS ════════════ */
+function syncLabTabs() {
+  $$("#labtabs .labtab").forEach(t => t.classList.toggle("on", t.dataset.lab === labFilter));
+}
+$$("#labtabs .labtab").forEach(t => t.onclick = () => { labFilter = t.dataset.lab; syncLabTabs(); renderInv(); });
+$$("#labtabs-r .labtab").forEach(t => t.onclick = () => {
+  labFilterR = t.dataset.lab;
+  $$("#labtabs-r .labtab").forEach(x => x.classList.toggle("on", x.dataset.lab === labFilterR));
+  renderRiw();
+});
+
+/* ════════════ REALTIME ════════════ */
+function listen() {
+  onSnapshot(query(collection(db, "barang"), orderBy("nama")), snap => {
+    barang = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderInv(); renderDash(); fillBarangSelect();
+  }, err => toast("Gagal memuat data barang.", "err"));
+
+  onSnapshot(query(collection(db, "riwayat"), orderBy("tanggal", "desc")), snap => {
+    riwayat = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderRiw(); renderDash();
+  }, err => toast("Gagal memuat riwayat.", "err"));
+}
+
+/* ════════════ DASHBOARD ════════════ */
+function renderDash() {
+  const B = myBarang(), R = myRiwayat();
+  const totalRusak = B.reduce((n, b) => n + (+b.jumlahRusak || 0), 0);
+  const totalBaik  = B.reduce((n, b) => n + (+b.jumlahBaik || 0), 0);
+  $("#s-total").textContent  = B.length;
+  $("#s-baik").textContent   = totalBaik;
+  $("#s-rusak").textContent  = totalRusak;
+  for (const k of Object.keys(LAB)) $("#s-" + k).textContent = barang.filter(b => b.lab === k).length;
+
+  const start = new Date(); start.setHours(0,0,0,0);
+  $("#s-trx").textContent = R.filter(r => r.tanggal?.toDate && r.tanggal.toDate() >= start).length;
+
+  /* bahan menipis */
+  const menipis = B
+    .filter(b => b.golongan === "Bahan" && (+b.jumlahBaik || 0) <= STOK_MINIMUM_BAHAN)
+    .sort((a,b) => (+a.jumlahBaik||0) - (+b.jumlahBaik||0));
+  $("#c-menipis").textContent = menipis.length;
+  $("#list-menipis").innerHTML = menipis.length ? menipis.map(b => `
+    <div class="alert-item">
+      <span class="chip ${b.lab}"><span class="cd"></span>${LAB[b.lab].nama}</span>
+      <div class="grow"><div class="nm">${esc(b.nama)}</div><div class="meta">${esc(b.lokasi || "—")}</div></div>
+      <div class="qty low">${+b.jumlahBaik||0} tersisa</div>
+    </div>`).join("") : emptyMini("Semua bahan aman", "Tidak ada bahan di bawah ambang batas.");
+
+  /* barang rusak */
+  const rusak = B.filter(b => (+b.jumlahRusak || 0) > 0).sort((a,b) => (+b.jumlahRusak||0) - (+a.jumlahRusak||0));
+  $("#c-rusak").textContent = rusak.length;
+  $("#list-rusak").innerHTML = rusak.length ? rusak.map(b => `
+    <div class="alert-item">
+      <span class="chip ${b.lab}"><span class="cd"></span>${LAB[b.lab].nama}</span>
+      <div class="grow"><div class="nm">${esc(b.nama)}</div><div class="meta">${esc(b.lokasi || "—")}</div></div>
+      <div class="qty bad">${+b.jumlahRusak||0} rusak</div>
+    </div>`).join("") : emptyMini("Tidak ada kerusakan", "Semua barang dalam kondisi baik.");
+
+  /* recent */
+  const recent = R.slice(0, 6);
+  $("#dash-recent").innerHTML = recent.length ? `<div class="alert-list">` + recent.map(r => `
+    <div class="alert-item">
+      <div class="hbadge ${r.tipe}">${r.tipe === "masuk" ? arrowIn() : arrowOut()}</div>
+      <div class="grow"><div class="nm">${esc(r.namaBarang)}</div><div class="meta">${fmtDate(r.tanggal)} · ${cap(r.lab)} · ${esc(r.keterangan || "")}</div></div>
+      <div class="qty ${r.tipe === "masuk" ? "low" : "bad"}" style="color:${r.tipe==="masuk"?"var(--ok)":"var(--danger)"}">${r.tipe==="masuk"?"+":"−"}${r.jumlah} ${esc(r.satuan||"")}</div>
+    </div>`).join("") + `</div>`
+    : emptyMini("Belum ada transaksi", "Catat penerimaan atau pengeluaran di menu Riwayat.");
+}
+function emptyMini(t, s) {
+  return `<div class="empty" style="padding:32px 20px;"><div class="et">${t}</div><div class="es">${s}</div></div>`;
+}
+function arrowIn()  { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>'; }
+function arrowOut() { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; }
+
+/* ════════════ INVENTARIS ════════════ */
+function filteredBarang() {
+  const q  = $("#q-search").value.toLowerCase().trim();
+  const gl = $("#q-golongan").value;
+  const kd = $("#q-kondisi").value;
+  let rows = barang.slice();
+  if (labFilter !== "all") rows = rows.filter(b => b.lab === labFilter);
+  if (q)  rows = rows.filter(b => [b.nama, b.noInduk, b.noKode, b.merk].some(v => (v||"").toLowerCase().includes(q)));
+  if (gl) rows = rows.filter(b => b.golongan === gl);
+  if (kd === "baik")  rows = rows.filter(b => (+b.jumlahBaik||0) > 0 && (+b.jumlahRusak||0) === 0);
+  if (kd === "rusak") rows = rows.filter(b => (+b.jumlahRusak||0) > 0);
+  return rows;
+}
+
+function renderInv() {
+  const tb = $("#tb-inventaris");
+  const rows = filteredBarang();
+
+  if (!rows.length) {
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty">
+      <svg class="ei" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+      <div class="et">Belum ada barang</div><div class="es">Klik “Tambah barang” untuk mulai mengisi inventaris.</div></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = rows.map(b => {
+    const baik = +b.jumlahBaik || 0, rusak = +b.jumlahRusak || 0;
+    const spec = [b.merk, b.ukuran].filter(Boolean).join(" · ") || "—";
+    return `<tr>
+      <td><span class="code">${esc(b.noInduk || "—")}</span>${b.noKode?`<div class="code" style="color:var(--faint); font-size:11px; margin-top:2px;">${esc(b.noKode)}</div>`:''}</td>
+      <td class="cell-name">${esc(b.nama)}${rusak>0&&baik===0?' <span class="tag rusak">rusak</span>':''}</td>
+      <td><span class="tag">${esc(b.golongan || "—")}</span></td>
+      <td><span class="chip ${b.lab}"><span class="cd"></span>${LAB[b.lab]?.nama || cap(b.lab)}</span></td>
+      <td class="cell-spec">${esc(spec)}</td>
+      <td><span class="num ${baik>0?'good':'zero'}">${baik}</span></td>
+      <td><span class="num ${rusak>0?'bad':'zero'}">${rusak}</span></td>
+      <td class="cell-spec">${esc(b.lokasi || "—")}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" title="Riwayat" data-hist="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button>
+        <button class="icon-btn" title="Ubah" data-edit="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="icon-btn danger" title="Hapus" data-del="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+      </div></td>
+    </tr>`;
+  }).join("");
+
+  tb.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => openBarang(b.dataset.edit));
+  tb.querySelectorAll("[data-del]").forEach(b => b.onclick = () => delBarang(b.dataset.del));
+  tb.querySelectorAll("[data-hist]").forEach(b => b.onclick = () => showHist(b.dataset.hist));
+}
+["#q-search","#q-golongan","#q-kondisi"].forEach(s => $(s).addEventListener("input", renderInv));
+
+/* ════════════ RIWAYAT ════════════ */
+function filteredRiwayat() {
+  let rows = riwayat.slice();
+  if (labFilterR !== "all") rows = rows.filter(r => r.lab === labFilterR);
+  return rows;
+}
+function renderRiw() {
+  const tb = $("#tb-riwayat");
+  const rows = filteredRiwayat();
+  if (!rows.length) {
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty">
+      <svg class="ei" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+      <div class="et">Belum ada transaksi</div><div class="es">Klik “Catat transaksi” untuk menambah catatan.</div></div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = rows.map(r => `
+    <tr>
+      <td class="cell-spec">${fmtDate(r.tanggal)}</td>
+      <td>${r.tipe === "masuk"
+        ? '<span class="tag baik">↓ Masuk</span>'
+        : '<span class="tag rusak">↑ Keluar</span>'}</td>
+      <td class="cell-name">${esc(r.namaBarang)}</td>
+      <td><span class="chip ${r.lab}"><span class="cd"></span>${LAB[r.lab]?.nama || cap(r.lab)}</span></td>
+      <td><span class="num">${r.jumlah} ${esc(r.satuan||"")}</span></td>
+      <td class="cell-spec" style="white-space:normal; min-width:160px;">${esc(r.keterangan || "—")}</td>
+      <td class="cell-spec">${esc((r.dicatatOleh||"—").split("@")[0])}</td>
+    </tr>`).join("");
+}
+
+/* ════════════ MODAL BARANG ════════════ */
+$("#btn-quick-add").onclick = () => openBarang(null);
+function refreshCodes() {
+  if (editId) return;                       // saat mengubah, nomor lama dipertahankan
+  const lab = $("#b-lab").value, gol = $("#b-golongan").value;
+  $("#b-induk").value = nextInduk(lab);
+  $("#b-kode").value  = nextKode(lab, gol);
+}
+$("#b-lab").onchange = refreshCodes;
+$("#b-golongan").onchange = refreshCodes;
+
+function openBarang(id) {
+  editId = id;
+  const set = (k, v) => $(k).value = v ?? "";
+  if (id) {
+    const b = barang.find(x => x.id === id);
+    $("#m-barang-title").textContent = "Ubah barang";
+    set("#b-nama", b.nama); $("#b-lab").value = b.lab || "fisika";
+    $("#b-golongan").value = b.golongan || "Barang";
+    set("#b-induk", b.noInduk); set("#b-kode", b.noKode);
+    set("#b-merk", b.merk); set("#b-ukuran", b.ukuran);
+    set("#b-baik", b.jumlahBaik ?? 0); set("#b-rusak", b.jumlahRusak ?? 0);
+    set("#b-lokasi", b.lokasi); set("#b-tanggal", b.tanggalMasuk || todayISO());
+  } else {
+    $("#m-barang-title").textContent = "Tambah barang";
+    ["#b-nama","#b-kode","#b-merk","#b-ukuran","#b-lokasi"].forEach(k => set(k, ""));
+    $("#b-lab").value = myLab || (labFilter !== "all" ? labFilter : "fisika");
+    $("#b-golongan").value = "Barang";
+    set("#b-baik", 0); set("#b-rusak", 0); set("#b-tanggal", todayISO());
+    refreshCodes();
+  }
+  openModal("#m-barang");
+}
+
+$("#b-save").onclick = async () => {
+  const nama = $("#b-nama").value.trim();
+  if (!nama) { toast("Nama barang wajib diisi.", "err"); return; }
+  const data = {
+    nama,
+    lab: $("#b-lab").value,
+    golongan: $("#b-golongan").value,
+    noInduk: $("#b-induk").value.trim(),
+    noKode: $("#b-kode").value.trim(),
+    merk: $("#b-merk").value.trim(),
+    ukuran: $("#b-ukuran").value.trim(),
+    jumlahBaik: +$("#b-baik").value || 0,
+    jumlahRusak: +$("#b-rusak").value || 0,
+    lokasi: $("#b-lokasi").value.trim(),
+    tanggalMasuk: $("#b-tanggal").value,
+    updatedAt: serverTimestamp(),
+  };
+  const btn = $("#b-save"); btn.textContent = "Menyimpan…"; btn.disabled = true;
+  try {
+    if (editId) { await updateDoc(doc(db, "barang", editId), data); toast("Barang diperbarui."); }
+    else { data.createdAt = serverTimestamp(); await addDoc(collection(db, "barang"), data); toast("Barang ditambahkan."); }
+    closeModal("#m-barang");
+  } catch (e) { toast("Gagal menyimpan barang.", "err"); }
+  finally { btn.textContent = "Simpan"; btn.disabled = false; }
+};
+
+async function delBarang(id) {
+  const b = barang.find(x => x.id === id);
+  if (!confirm(`Hapus "${b?.nama}" dari inventaris? Tindakan ini tidak bisa dibatalkan.`)) return;
+  try { await deleteDoc(doc(db, "barang", id)); toast("Barang dihapus."); }
+  catch (e) { toast("Gagal menghapus barang.", "err"); }
+}
+
+/* ════════════ MODAL TRANSAKSI ════════════ */
+$("#btn-trx").onclick = () => {
+  $("#t-tanggal").value = todayISO();
+  $("#t-jumlah").value = 1; $("#t-satuan").value = ""; $("#t-ket").value = "";
+  $("#t-tipe").value = "masuk"; $("#t-auto").checked = true;
+  fillBarangSelect();
+  openModal("#m-trx");
+};
+
+function fillBarangSelect() {
+  const sel = $("#t-barang"); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Pilih barang —</option>' +
+    myBarang().map(b => `<option value="${b.id}">${esc(b.nama)} · ${LAB[b.lab]?.nama || cap(b.lab)}</option>`).join("");
+  sel.value = cur;
+}
+
+$("#t-save").onclick = async () => {
+  const id = $("#t-barang").value;
+  if (!id) { toast("Pilih barang terlebih dahulu.", "err"); return; }
+  const b = barang.find(x => x.id === id);
+  const jumlah = +$("#t-jumlah").value || 1;
+  const tipe = $("#t-tipe").value;
+  const auto = $("#t-auto").checked;
+  const btn = $("#t-save"); btn.textContent = "Menyimpan…"; btn.disabled = true;
+  try {
+    await addDoc(collection(db, "riwayat"), {
+      tipe, jumlah,
+      namaBarang: b.nama, barangId: id, lab: b.lab,
+      satuan: $("#t-satuan").value.trim(),
+      keterangan: $("#t-ket").value.trim(),
+      tanggal: Timestamp.fromDate(new Date($("#t-tanggal").value)),
+      dicatatOleh: me?.email || "—",
+      createdAt: serverTimestamp(),
+    });
+    if (auto) {
+      const ref = doc(db, "barang", id);
+      await runTransaction(db, async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) return;
+        const cur = +snap.data().jumlahBaik || 0;
+        const next = tipe === "masuk" ? cur + jumlah : Math.max(0, cur - jumlah);
+        tx.update(ref, { jumlahBaik: next, updatedAt: serverTimestamp() });
+      });
+    }
+    toast("Transaksi dicatat.");
+    closeModal("#m-trx");
+  } catch (e) { toast("Gagal menyimpan transaksi.", "err"); }
+  finally { btn.textContent = "Simpan transaksi"; btn.disabled = false; }
+};
+
+/* ════════════ RIWAYAT PER BARANG ════════════ */
+function showHist(id) {
+  const b = barang.find(x => x.id === id);
+  $("#hist-title").textContent = "Riwayat — " + (b?.nama || "");
+  const rows = riwayat.filter(r => r.barangId === id);
+  $("#hist-body").innerHTML = rows.length ? `<div class="hist">` + rows.map(r => `
+    <div class="hrow">
+      <div class="hbadge ${r.tipe}">${r.tipe === "masuk" ? arrowIn() : arrowOut()}</div>
+      <div class="hg"><div class="ht">${r.tipe === "masuk" ? "Penerimaan" : "Pengeluaran"}</div>
+        <div class="hm">${fmtDate(r.tanggal)} · ${esc(r.keterangan || "—")}</div></div>
+      <div class="hq ${r.tipe}">${r.tipe === "masuk" ? "+" : "−"}${r.jumlah} ${esc(r.satuan||"")}</div>
+    </div>`).join("") + `</div>`
+    : emptyMini("Belum ada riwayat", "Barang ini belum punya catatan transaksi.");
+  openModal("#m-hist");
+}
+
+/* ════════════ MODAL HELPERS ════════════ */
+function openModal(sel) { $(sel).classList.add("open"); }
+function closeModal(sel) { $(sel).classList.remove("open"); }
+$$(".scrim").forEach(s => {
+  s.addEventListener("click", e => { if (e.target === s) s.classList.remove("open"); });
+  s.querySelectorAll("[data-close]").forEach(b => b.onclick = () => s.classList.remove("open"));
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".scrim.open").forEach(s => s.classList.remove("open")); });
+
+/* ── escape HTML ── */
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ════════════ EXPORT EXCEL ════════════ */
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`;
+}
+function labelLab() { return myLab ? LAB[myLab].nama : (labFilter !== "all" ? LAB[labFilter]?.nama : "SemuaLab"); }
+
+function exportBarang() {
+  if (typeof XLSX === "undefined") { toast("Pustaka export belum termuat. Periksa koneksi.", "err"); return; }
+  const rows = filteredBarang();
+  if (!rows.length) { toast("Tidak ada data untuk diekspor.", "err"); return; }
+  const data = rows.map(b => ({
+    "No. Induk": b.noInduk || "",
+    "No. Kode": b.noKode || "",
+    "Nama Barang": b.nama || "",
+    "Golongan": b.golongan || "",
+    "Lab": LAB[b.lab]?.nama || b.lab || "",
+    "Merk": b.merk || "",
+    "Ukuran / Spesifikasi": b.ukuran || "",
+    "Jumlah Baik": +b.jumlahBaik || 0,
+    "Jumlah Rusak": +b.jumlahRusak || 0,
+    "Lokasi": b.lokasi || "",
+    "Tanggal Masuk": b.tanggalMasuk || "",
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [10,10,32,10,10,14,20,11,12,16,14].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Barang");
+  XLSX.writeFile(wb, `SiLab_Inventaris_${labelLab()}_${stamp()}.xlsx`);
+  toast(`${rows.length} barang diekspor.`);
+}
+
+function exportRiwayat() {
+  if (typeof XLSX === "undefined") { toast("Pustaka export belum termuat. Periksa koneksi.", "err"); return; }
+  const rows = filteredRiwayat();
+  if (!rows.length) { toast("Tidak ada transaksi untuk diekspor.", "err"); return; }
+  const data = rows.map(r => ({
+    "Tanggal": fmtDate(r.tanggal),
+    "Tipe": r.tipe === "masuk" ? "Masuk" : "Keluar",
+    "Nama Barang": r.namaBarang || "",
+    "Lab": LAB[r.lab]?.nama || r.lab || "",
+    "Jumlah": r.jumlah || 0,
+    "Satuan": r.satuan || "",
+    "Keterangan": r.keterangan || "",
+    "Petugas": r.dicatatOleh || "",
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [14,9,32,10,9,10,30,22].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Riwayat");
+  XLSX.writeFile(wb, `SiLab_Riwayat_${labelLab()}_${stamp()}.xlsx`);
+  toast(`${rows.length} transaksi diekspor.`);
+}
+
+$("#btn-export-inv").onclick = exportBarang;
+$("#btn-export-riw").onclick = exportRiwayat;
+
+/* ════════════ IMPORT EXCEL (replace per lab) ════════════ */
+function labKeyFromAny(v) {
+  const s = String(v || "").trim().toLowerCase();
+  if (LAB[s]) return s;
+  for (const k in LAB) if (LAB[k].nama.toLowerCase() === s) return k;
+  return "";
+}
+function normGol(v) {
+  const s = String(v || "").trim().toLowerCase();
+  return s === "alat" ? "Alat" : s === "bahan" ? "Bahan" : "Barang";
+}
+function normDate(v) {
+  if (v == null || v === "") return "";
+  if (v instanceof Date) return v.toISOString().split("T")[0];
+  if (typeof v === "number") { // serial Excel → tanggal
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return isNaN(d) ? "" : d.toISOString().split("T")[0];
+  }
+  return String(v).trim();
+}
+
+$("#btn-import-inv").onclick = () => $("#file-import").click();
+$("#file-import").onchange = async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";                       // reset agar file sama bisa dipilih lagi
+  if (!file) return;
+  if (typeof XLSX === "undefined") { toast("Pustaka import belum termuat. Periksa koneksi.", "err"); return; }
+
+  let raw;
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array", cellDates: true });
+    raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
+  } catch (err) { toast("Gagal membaca file. Pastikan format .xlsx.", "err"); return; }
+  if (!raw.length) { toast("File kosong atau format tidak dikenali.", "err"); return; }
+
+  /* petakan baris → objek barang */
+  let rows = [];
+  for (const r of raw) {
+    const nama = String(r["Nama Barang"] ?? r["nama"] ?? "").trim();
+    if (!nama) continue;
+    rows.push({
+      noInduk: String(r["No. Induk"] ?? "").trim(),
+      noKode:  String(r["No. Kode"] ?? "").trim(),
+      nama,
+      golongan: normGol(r["Golongan"]),
+      lab: labKeyFromAny(r["Lab"] ?? r["lab"] ?? ""),
+      merk: String(r["Merk"] ?? "").trim(),
+      ukuran: String(r["Ukuran / Spesifikasi"] ?? r["Ukuran"] ?? "").trim(),
+      jumlahBaik: +r["Jumlah Baik"] || 0,
+      jumlahRusak: +r["Jumlah Rusak"] || 0,
+      lokasi: String(r["Lokasi"] ?? "").trim(),
+      tanggalMasuk: normDate(r["Tanggal Masuk"]),
+    });
+  }
+  if (!rows.length) { toast("Tidak ada baris berisi Nama Barang.", "err"); return; }
+
+  /* tentukan lab target sesuai peran */
+  let targets;
+  if (myLab) {
+    rows = rows.filter(r => !r.lab || r.lab === myLab).map(r => ({ ...r, lab: myLab }));
+    if (!rows.length) { toast(`File tidak berisi barang Lab ${LAB[myLab].nama}.`, "err"); return; }
+    targets = [myLab];
+  } else {
+    rows = rows.filter(r => r.lab);
+    targets = [...new Set(rows.map(r => r.lab))];
+    if (!targets.length) { toast("Kolom Lab tidak dikenali (isi: Fisika/Kimia/Biologi/Komputer).", "err"); return; }
+  }
+
+  /* isi otomatis No. Induk / No. Kode yang kosong (lanjut dari nomor tertinggi di file) */
+  const indukSeq = {}, kodeSeq = {};
+  for (const r of rows) {
+    const mI = (r.noInduk || "").match(new RegExp(`^${LAB[r.lab].prefix}-(\\d+)$`));
+    if (mI) indukSeq[r.lab] = Math.max(indukSeq[r.lab] || 0, +mI[1]);
+    const gp = GOL[r.golongan] || "BRG", kk = r.lab + "|" + r.golongan;
+    const mK = (r.noKode || "").match(new RegExp(`^${gp}-${LAB[r.lab].letter}(\\d+)$`));
+    if (mK) kodeSeq[kk] = Math.max(kodeSeq[kk] || 0, +mK[1]);
+  }
+  for (const r of rows) {
+    if (!r.noInduk) { indukSeq[r.lab] = (indukSeq[r.lab] || 0) + 1; r.noInduk = `${LAB[r.lab].prefix}-${String(indukSeq[r.lab]).padStart(3, "0")}`; }
+    if (!r.noKode) { const gp = GOL[r.golongan] || "BRG", kk = r.lab + "|" + r.golongan; kodeSeq[kk] = (kodeSeq[kk] || 0) + 1; r.noKode = `${gp}-${LAB[r.lab].letter}${String(kodeSeq[kk]).padStart(2, "0")}`; }
+  }
+
+  /* konfirmasi (destruktif) */
+  const ringkasan = targets.map(l => {
+    const lama = barang.filter(b => b.lab === l).length;
+    const baru = rows.filter(r => r.lab === l).length;
+    return `• Lab ${LAB[l].nama}: ${lama} data lama akan dihapus → ${baru} data baru`;
+  }).join("\n");
+  if (!confirm(`Import ini akan MENGGANTI seluruh inventaris berikut:\n\n${ringkasan}\n\nData lama dihapus permanen dan tidak bisa dikembalikan. Lanjutkan?`)) return;
+
+  /* susun operasi: hapus lama + tambah baru, jalankan dalam batch */
+  const ops = [];
+  for (const l of targets) barang.filter(b => b.lab === l).forEach(b => ops.push({ del: b.id }));
+  for (const r of rows) ops.push({ add: { ...r, createdAt: serverTimestamp(), updatedAt: serverTimestamp() } });
+
+  const btn = $("#btn-import-inv"); const label = btn.innerHTML;
+  btn.innerHTML = "Mengimpor…"; btn.disabled = true;
+  try {
+    for (let i = 0; i < ops.length; i += 450) {
+      const batch = writeBatch(db);
+      for (const op of ops.slice(i, i + 450)) {
+        if (op.del) batch.delete(doc(db, "barang", op.del));
+        else batch.set(doc(collection(db, "barang")), op.add);
+      }
+      await batch.commit();
+    }
+    toast(`Import selesai — ${rows.length} barang diganti.`);
+  } catch (err) {
+    toast("Gagal mengimpor data.", "err");
+  } finally { btn.innerHTML = label; btn.disabled = false; }
+};
+
+/* init date label */
+$("#pg-sub").textContent = longDate();
+</script>
+</body>
+</html>
