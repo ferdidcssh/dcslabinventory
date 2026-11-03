@@ -749,7 +749,7 @@ const STOK_MINIMUM_BAHAN = 3;
    ║  Email yang TIDAK terdaftar di sini DITOLAK masuk.         ║
    ╚═══════════════════════════════════════════════════════════╝ */
 const PENGGUNA = {
-  "adminlab@dcssh":    { peran: "admin" },
+  "adminlab@dcssh.com":    { peran: "admin" },
   "yodhidcssh@gmail.com":   { peran: "lab", lab: "fisika"   },
   "ventiedcssh@gmail.com":    { peran: "lab", lab: "kimia"    },
   "erindcssh@gmail.com":  { peran: "lab", lab: "biologi"  },
@@ -912,7 +912,7 @@ onAuthStateChanged(auth, user => {
     const prof = resolveProfile(user.email);
     if (!prof) {   // akun belum didaftarkan → tolak (BUKAN otomatis admin)
       stopListening();
-      $("#login-msg").textContent = `Akun ${user.email} belum terdaftar di SiLab. Minta admin menambahkan email ini ke daftar PENGGUNA.`;
+      $("#login-msg").textContent = `Akun ${user.email} belum terdaftar di sistem. Minta admin menambahkan email ini ke daftar PENGGUNA.`;
       signOut(auth);
       return;
     }
