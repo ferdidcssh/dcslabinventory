@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DCS SH — Inventaris Laboratorium</title>
+<title>DCS SH - Inventaris Laboratorium</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -136,6 +136,7 @@
   .icon-btn { border: none; background: none; cursor: pointer; color: var(--muted); padding: 7px; border-radius: 7px; display: grid; place-items: center; transition: background .12s, color .12s; }
   .icon-btn:hover { background: var(--surface-2); color: var(--ink); }
   .icon-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
+  .icon-btn.warn:hover { background: var(--warn-bg); color: var(--warn); }
 
   /* ─── MAIN ──────────────────────────────────────────── */
   .main { min-width: 0; }
@@ -280,12 +281,14 @@
   .hbadge { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
   .hbadge.masuk { background: var(--ok-bg); color: var(--ok); }
   .hbadge.keluar { background: var(--danger-bg); color: var(--danger); }
+  .hbadge.rusak { background: var(--warn-bg); color: var(--warn); }
   .hrow .hg { flex: 1; }
   .hrow .ht { font-size: 13px; font-weight: 500; }
   .hrow .hm { font-size: 12px; color: var(--muted); margin-top: 1px; }
   .hrow .hq { font-family: var(--f-mono); font-weight: 600; font-size: 13px; white-space: nowrap; }
   .hrow .hq.masuk { color: var(--ok); }
   .hrow .hq.keluar { color: var(--danger); }
+  .hrow .hq.rusak { color: var(--warn); }
 
   /* ─── TOAST ─────────────────────────────────────────── */
   #toast {
@@ -333,7 +336,7 @@
     <div class="login-sub">Sistem Inventaris Laboratorium · SMA Daniel Creative</div>
     <div class="field">
       <label for="in-email">Email</label>
-      <input class="input" id="in-email" type="email" placeholder="email@domain.com" autocomplete="username">
+      <input class="input" id="in-email" type="email" placeholder="nama@silab.com" autocomplete="username">
     </div>
     <div class="field">
       <label for="in-pass">Kata sandi</label>
@@ -475,9 +478,9 @@
             <table>
               <thead><tr>
                 <th>No. Induk</th><th>Nama barang</th><th>Golongan</th><th>Lab</th>
-                <th>Merk / ukuran</th><th>Baik</th><th>Rusak</th><th>Lokasi</th><th></th>
+                <th>Merk / ukuran</th><th>Baik</th><th>Rusak</th><th>Lokasi</th><th>Thn. beli</th><th>Sumber dana</th><th></th>
               </tr></thead>
-              <tbody id="tb-inventaris"><tr><td colspan="9"><div class="spin"></div></td></tr></tbody>
+              <tbody id="tb-inventaris"><tr><td colspan="11"><div class="spin"></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -577,6 +580,17 @@
           <label class="fl">Tanggal masuk</label>
           <input class="input" id="b-tanggal" type="date">
         </div>
+        <div>
+          <label class="fl">Tahun pembelian</label>
+          <input class="input" id="b-tahun" type="number" min="1950" max="2100" placeholder="mis. 2024">
+        </div>
+        <div>
+          <label class="fl">Sumber dana</label>
+          <div style="display:flex; gap:6px;">
+            <select class="select input" id="b-dana" style="width:100%;"></select>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-kelola-dana" style="width:auto; padding:0 12px;" title="Kelola daftar sumber dana">Kelola</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -643,6 +657,62 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: LAPOR KERUSAKAN ═══ -->
+<div class="scrim" id="m-rusak">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <h3>Lapor kerusakan</h3>
+      <button class="icon-btn" data-close><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--warn-bg); border-radius:var(--r); padding:11px 14px; margin-bottom:16px;">
+        <div style="font-weight:500; font-size:14px;" id="r-nama">—</div>
+        <div style="font-size:12px; color:var(--warn); margin-top:2px;">Stok baik saat ini: <b id="r-baik">0</b> unit</div>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label class="fl">Jumlah rusak <span class="req">*</span></label>
+          <input class="input" id="r-jumlah" type="number" min="1" value="1">
+        </div>
+        <div>
+          <label class="fl">Tanggal</label>
+          <input class="input" id="r-tanggal" type="date">
+        </div>
+        <div class="full">
+          <label class="fl">Keterangan</label>
+          <input class="input" id="r-ket" placeholder="mis. Pecah saat praktikum, terbakar, dsb.">
+        </div>
+      </div>
+      <div class="hint" style="margin-top:12px;">Jumlah ini akan dipindahkan dari <b>Baik</b> ke <b>Rusak</b>, dan tercatat di Riwayat.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close style="width:auto;">Batal</button>
+      <button class="btn btn-sm" id="r-save" style="width:auto; background:var(--warn); color:#fff;">Simpan laporan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: KELOLA SUMBER DANA ═══ -->
+<div class="scrim" id="m-dana" style="z-index:70;">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <h3>Kelola sumber dana</h3>
+      <button class="icon-btn" data-close><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex; gap:8px; margin-bottom:16px;">
+        <input class="input" id="dana-baru" placeholder="Nama sumber dana baru, mis. BOS">
+        <button class="btn btn-primary btn-sm" id="dana-tambah" style="width:auto;">Tambah</button>
+      </div>
+      <div id="dana-list"></div>
+      <div class="hint" style="margin-top:12px;">Mengubah nama akan ikut memperbarui semua barang yang memakai sumber dana tersebut. Menghapus tidak mengubah barang yang sudah tercatat.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" data-close style="width:auto;">Tutup</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -680,11 +750,11 @@ const STOK_MINIMUM_BAHAN = 3;
    ║  Email yang tidak terdaftar di sini otomatis jadi admin.   ║
    ╚═══════════════════════════════════════════════════════════╝ */
 const PENGGUNA = {
-  "adminlab@dcssh":    { peran: "admin" },
-  "yodhidcssh@gmail.com":   { peran: "lab", lab: "fisika"   },
-  "ventiedcssh@gmail.com":    { peran: "lab", lab: "kimia"    },
-  "erindcssh@gmail.com":  { peran: "lab", lab: "biologi"  },
-  "ferdidcssh@gmail.com": { peran: "lab", lab: "komputer" },
+  "admin@silab.com":    { peran: "admin" },
+  "fisika@silab.com":   { peran: "lab", lab: "fisika"   },
+  "kimia@silab.com":    { peran: "lab", lab: "kimia"    },
+  "biologi@silab.com":  { peran: "lab", lab: "biologi"  },
+  "komputer@silab.com": { peran: "lab", lab: "komputer" },
 };
 
 const app  = initializeApp(firebaseConfig);
@@ -705,6 +775,7 @@ const GOL = { Barang: "BRG", Alat: "ALT", Bahan: "BHN" };
 let me = null;
 let myLab = null;   // null = admin (semua lab); jika diisi = hanya lab tsb
 let barang = [];
+let danaList = [];   // daftar sumber dana (koleksi Firestore "sumberDana")
 let riwayat = [];
 let editId = null;
 let labFilter = "all";
@@ -827,6 +898,9 @@ function applyScope(email) {
   // baris pemilih lab di form tambah barang
   $("#row-lab").style.display = isLab ? "none" : "";
 
+  // hanya admin yang boleh mengelola daftar sumber dana
+  $("#btn-kelola-dana").style.display = isLab ? "none" : "";
+
   // kunci filter ke lab sendiri
   labFilter  = isLab ? myLab : "all";
   labFilterR = isLab ? myLab : "all";
@@ -883,6 +957,13 @@ function listen() {
     renderInv(); renderDash(); fillBarangSelect();
   }, err => toast("Gagal memuat data barang.", "err"));
 
+  onSnapshot(query(collection(db, "sumberDana"), orderBy("nama")), snap => {
+    danaList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    fillDanaSelect($("#b-dana").value);
+    renderDanaList();
+    renderInv();
+  }, err => toast("Gagal memuat daftar sumber dana.", "err"));
+
   onSnapshot(query(collection(db, "riwayat"), orderBy("tanggal", "desc")), snap => {
     riwayat = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderRiw(); renderDash();
@@ -928,9 +1009,9 @@ function renderDash() {
   const recent = R.slice(0, 6);
   $("#dash-recent").innerHTML = recent.length ? `<div class="alert-list">` + recent.map(r => `
     <div class="alert-item">
-      <div class="hbadge ${r.tipe}">${r.tipe === "masuk" ? arrowIn() : arrowOut()}</div>
+      <div class="hbadge ${r.tipe}">${trxIcon(r.tipe)}</div>
       <div class="grow"><div class="nm">${esc(r.namaBarang)}</div><div class="meta">${fmtDate(r.tanggal)} · ${cap(r.lab)} · ${esc(r.keterangan || "")}</div></div>
-      <div class="qty ${r.tipe === "masuk" ? "low" : "bad"}" style="color:${r.tipe==="masuk"?"var(--ok)":"var(--danger)"}">${r.tipe==="masuk"?"+":"−"}${r.jumlah} ${esc(r.satuan||"")}</div>
+      <div class="qty" style="color:${r.tipe==="masuk"?"var(--ok)":r.tipe==="rusak"?"var(--warn)":"var(--danger)"}">${trxSign(r.tipe)}${r.jumlah}${r.tipe==="rusak"?" rusak":" "+esc(r.satuan||"")}</div>
     </div>`).join("") + `</div>`
     : emptyMini("Belum ada transaksi", "Catat penerimaan atau pengeluaran di menu Riwayat.");
 }
@@ -939,6 +1020,10 @@ function emptyMini(t, s) {
 }
 function arrowIn()  { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>'; }
 function arrowOut() { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'; }
+function warnIcon() { return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>'; }
+function trxIcon(t)  { return t === "masuk" ? arrowIn() : t === "keluar" ? arrowOut() : warnIcon(); }
+function trxLabel(t) { return t === "masuk" ? "Penerimaan" : t === "keluar" ? "Pengeluaran" : "Kerusakan"; }
+function trxSign(t)  { return t === "masuk" ? "+" : t === "keluar" ? "−" : ""; }
 
 /* ════════════ INVENTARIS ════════════ */
 function filteredBarang() {
@@ -947,7 +1032,7 @@ function filteredBarang() {
   const kd = $("#q-kondisi").value;
   let rows = barang.slice();
   if (labFilter !== "all") rows = rows.filter(b => b.lab === labFilter);
-  if (q)  rows = rows.filter(b => [b.nama, b.noInduk, b.noKode, b.merk].some(v => (v||"").toLowerCase().includes(q)));
+  if (q)  rows = rows.filter(b => [b.nama, b.noInduk, b.noKode, b.merk, b.sumberDana, String(b.tahunPembelian||"")].some(v => (v||"").toLowerCase().includes(q)));
   if (gl) rows = rows.filter(b => b.golongan === gl);
   if (kd === "baik")  rows = rows.filter(b => (+b.jumlahBaik||0) > 0 && (+b.jumlahRusak||0) === 0);
   if (kd === "rusak") rows = rows.filter(b => (+b.jumlahRusak||0) > 0);
@@ -959,7 +1044,7 @@ function renderInv() {
   const rows = filteredBarang();
 
   if (!rows.length) {
-    tb.innerHTML = `<tr><td colspan="9"><div class="empty">
+    tb.innerHTML = `<tr><td colspan="11"><div class="empty">
       <svg class="ei" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
       <div class="et">Belum ada barang</div><div class="es">Klik “Tambah barang” untuk mulai mengisi inventaris.</div></div></td></tr>`;
     return;
@@ -976,8 +1061,11 @@ function renderInv() {
       <td><span class="num ${baik>0?'good':'zero'}">${baik}</span></td>
       <td><span class="num ${rusak>0?'bad':'zero'}">${rusak}</span></td>
       <td class="cell-spec">${esc(b.lokasi || "—")}</td>
+      <td class="cell-spec">${esc(b.tahunPembelian || "—")}</td>
+      <td class="cell-spec">${esc(b.sumberDana || "—")}</td>
       <td><div class="row-actions">
         <button class="icon-btn" title="Riwayat" data-hist="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button>
+        <button class="icon-btn warn" title="Lapor rusak" data-rusak="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></button>
         <button class="icon-btn" title="Ubah" data-edit="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         <button class="icon-btn danger" title="Hapus" data-del="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
       </div></td>
@@ -987,6 +1075,7 @@ function renderInv() {
   tb.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => openBarang(b.dataset.edit));
   tb.querySelectorAll("[data-del]").forEach(b => b.onclick = () => delBarang(b.dataset.del));
   tb.querySelectorAll("[data-hist]").forEach(b => b.onclick = () => showHist(b.dataset.hist));
+  tb.querySelectorAll("[data-rusak]").forEach(b => b.onclick = () => openRusak(b.dataset.rusak));
 }
 ["#q-search","#q-golongan","#q-kondisi"].forEach(s => $(s).addEventListener("input", renderInv));
 
@@ -1010,10 +1099,12 @@ function renderRiw() {
       <td class="cell-spec">${fmtDate(r.tanggal)}</td>
       <td>${r.tipe === "masuk"
         ? '<span class="tag baik">↓ Masuk</span>'
+        : r.tipe === "rusak"
+        ? '<span class="tag" style="background:var(--warn-bg);color:var(--warn)">⚠ Rusak</span>'
         : '<span class="tag rusak">↑ Keluar</span>'}</td>
       <td class="cell-name">${esc(r.namaBarang)}</td>
       <td><span class="chip ${r.lab}"><span class="cd"></span>${LAB[r.lab]?.nama || cap(r.lab)}</span></td>
-      <td><span class="num">${r.jumlah} ${esc(r.satuan||"")}</span></td>
+      <td><span class="num">${r.jumlah} ${r.tipe === "rusak" ? "unit" : esc(r.satuan||"")}</span></td>
       <td class="cell-spec" style="white-space:normal; min-width:160px;">${esc(r.keterangan || "—")}</td>
       <td class="cell-spec">${esc((r.dicatatOleh||"—").split("@")[0])}</td>
     </tr>`).join("");
@@ -1042,12 +1133,16 @@ function openBarang(id) {
     set("#b-merk", b.merk); set("#b-ukuran", b.ukuran);
     set("#b-baik", b.jumlahBaik ?? 0); set("#b-rusak", b.jumlahRusak ?? 0);
     set("#b-lokasi", b.lokasi); set("#b-tanggal", b.tanggalMasuk || todayISO());
+    set("#b-tahun", b.tahunPembelian ?? "");
+    fillDanaSelect(b.sumberDana || "");
   } else {
     $("#m-barang-title").textContent = "Tambah barang";
     ["#b-nama","#b-kode","#b-merk","#b-ukuran","#b-lokasi"].forEach(k => set(k, ""));
     $("#b-lab").value = myLab || (labFilter !== "all" ? labFilter : "fisika");
     $("#b-golongan").value = "Barang";
     set("#b-baik", 0); set("#b-rusak", 0); set("#b-tanggal", todayISO());
+    set("#b-tahun", "");
+    fillDanaSelect("");
     refreshCodes();
   }
   openModal("#m-barang");
@@ -1056,6 +1151,9 @@ function openBarang(id) {
 $("#b-save").onclick = async () => {
   const nama = $("#b-nama").value.trim();
   if (!nama) { toast("Nama barang wajib diisi.", "err"); return; }
+  const tahunRaw = $("#b-tahun").value.trim();
+  const tahun = tahunRaw ? parseInt(tahunRaw) : null;
+  if (tahunRaw && (!(tahun >= 1950 && tahun <= 2100))) { toast("Tahun pembelian tidak valid (1950–2100).", "err"); return; }
   const data = {
     nama,
     lab: $("#b-lab").value,
@@ -1068,6 +1166,8 @@ $("#b-save").onclick = async () => {
     jumlahRusak: +$("#b-rusak").value || 0,
     lokasi: $("#b-lokasi").value.trim(),
     tanggalMasuk: $("#b-tanggal").value,
+    tahunPembelian: tahun,
+    sumberDana: $("#b-dana").value || "",
     updatedAt: serverTimestamp(),
   };
   const btn = $("#b-save"); btn.textContent = "Menyimpan…"; btn.disabled = true;
@@ -1144,14 +1244,140 @@ function showHist(id) {
   const rows = riwayat.filter(r => r.barangId === id);
   $("#hist-body").innerHTML = rows.length ? `<div class="hist">` + rows.map(r => `
     <div class="hrow">
-      <div class="hbadge ${r.tipe}">${r.tipe === "masuk" ? arrowIn() : arrowOut()}</div>
-      <div class="hg"><div class="ht">${r.tipe === "masuk" ? "Penerimaan" : "Pengeluaran"}</div>
+      <div class="hbadge ${r.tipe}">${trxIcon(r.tipe)}</div>
+      <div class="hg"><div class="ht">${trxLabel(r.tipe)}</div>
         <div class="hm">${fmtDate(r.tanggal)} · ${esc(r.keterangan || "—")}</div></div>
-      <div class="hq ${r.tipe}">${r.tipe === "masuk" ? "+" : "−"}${r.jumlah} ${esc(r.satuan||"")}</div>
+      <div class="hq ${r.tipe}">${trxSign(r.tipe)}${r.jumlah}${r.tipe === "rusak" ? " rusak" : " " + esc(r.satuan||"")}</div>
     </div>`).join("") + `</div>`
     : emptyMini("Belum ada riwayat", "Barang ini belum punya catatan transaksi.");
   openModal("#m-hist");
 }
+
+/* ════════════ SUMBER DANA (daftar bisa diedit) ════════════ */
+function fillDanaSelect(selected) {
+  const sel = $("#b-dana"); if (!sel) return;
+  const names = danaList.map(d => d.nama);
+  let html = '<option value="">— Belum dipilih —</option>' +
+    names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  if (selected && !names.includes(selected))
+    html += `<option value="${esc(selected)}">${esc(selected)} (tidak ada di daftar)</option>`;
+  sel.innerHTML = html;
+  sel.value = selected || "";
+}
+
+function renderDanaList() {
+  const box = $("#dana-list"); if (!box) return;
+  if (!danaList.length) {
+    box.innerHTML = emptyMini("Belum ada sumber dana", "Tambahkan yang pertama lewat kolom di atas.");
+    return;
+  }
+  box.innerHTML = '<div class="hist">' + danaList.map(d => {
+    const n = barang.filter(b => b.sumberDana === d.nama).length;
+    return `<div class="hrow" style="align-items:center;">
+      <div class="hg"><div class="ht">${esc(d.nama)}</div><div class="hm">${n} barang</div></div>
+      <button class="icon-btn" title="Ubah nama" data-dana-edit="${d.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <button class="icon-btn danger" title="Hapus" data-dana-del="${d.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+    </div>`;
+  }).join("") + '</div>';
+  box.querySelectorAll("[data-dana-edit]").forEach(b => b.onclick = () => renameDana(b.dataset.danaEdit));
+  box.querySelectorAll("[data-dana-del]").forEach(b => b.onclick = () => hapusDana(b.dataset.danaDel));
+}
+
+const danaAda = (nm, exceptId) => danaList.some(x => x.id !== exceptId && (x.nama || "").toLowerCase() === nm.toLowerCase());
+
+async function tambahDana() {
+  const nm = $("#dana-baru").value.trim();
+  if (!nm) { toast("Nama sumber dana tidak boleh kosong.", "err"); return; }
+  if (danaAda(nm)) { toast("Sumber dana itu sudah ada.", "err"); return; }
+  try {
+    await addDoc(collection(db, "sumberDana"), { nama: nm, createdAt: serverTimestamp() });
+    $("#dana-baru").value = "";
+    toast("Sumber dana ditambahkan.");
+  } catch (e) { toast("Gagal menambah sumber dana.", "err"); }
+}
+
+async function renameDana(id) {
+  const d = danaList.find(x => x.id === id); if (!d) return;
+  const input = prompt("Ubah nama sumber dana:", d.nama);
+  if (input === null) return;
+  const baru = input.trim();
+  if (!baru || baru === d.nama) return;
+  if (danaAda(baru, id)) { toast("Sumber dana itu sudah ada.", "err"); return; }
+  try {
+    const terkait = barang.filter(b => b.sumberDana === d.nama);
+    await updateDoc(doc(db, "sumberDana", id), { nama: baru });
+    for (let i = 0; i < terkait.length; i += 450) {
+      const batch = writeBatch(db);
+      terkait.slice(i, i + 450).forEach(b =>
+        batch.update(doc(db, "barang", b.id), { sumberDana: baru, updatedAt: serverTimestamp() }));
+      await batch.commit();
+    }
+    toast(terkait.length ? `Diubah — ${terkait.length} barang ikut diperbarui.` : "Nama sumber dana diubah.");
+  } catch (e) { toast("Gagal mengubah nama.", "err"); }
+}
+
+async function hapusDana(id) {
+  const d = danaList.find(x => x.id === id); if (!d) return;
+  const n = barang.filter(b => b.sumberDana === d.nama).length;
+  const info = n ? `\n\n${n} barang masih memakai sumber dana ini. Data barang tidak diubah, tetapi nama ini tidak lagi muncul di pilihan.` : "";
+  if (!confirm(`Hapus sumber dana "${d.nama}"?${info}`)) return;
+  try { await deleteDoc(doc(db, "sumberDana", id)); toast("Sumber dana dihapus."); }
+  catch (e) { toast("Gagal menghapus sumber dana.", "err"); }
+}
+
+$("#btn-kelola-dana").onclick = () => { renderDanaList(); openModal("#m-dana"); };
+$("#dana-tambah").onclick = tambahDana;
+$("#dana-baru").addEventListener("keydown", e => { if (e.key === "Enter") tambahDana(); });
+
+/* ════════════ LAPOR KERUSAKAN ════════════ */
+let rusakId = null;
+function openRusak(id) {
+  const b = barang.find(x => x.id === id);
+  if (!b) return;
+  rusakId = id;
+  $("#r-nama").textContent = b.nama || "—";
+  $("#r-baik").textContent = +b.jumlahBaik || 0;
+  $("#r-jumlah").value = 1;
+  $("#r-jumlah").max = +b.jumlahBaik || 0;
+  $("#r-tanggal").value = todayISO();
+  $("#r-ket").value = "";
+  openModal("#m-rusak");
+}
+
+$("#r-save").onclick = async () => {
+  const b = barang.find(x => x.id === rusakId);
+  if (!b) { toast("Barang tidak ditemukan.", "err"); return; }
+  const n = parseInt($("#r-jumlah").value) || 0;
+  const baik = +b.jumlahBaik || 0;
+  if (n < 1) { toast("Jumlah rusak minimal 1.", "err"); return; }
+  if (n > baik) { toast(`Melebihi stok baik (${baik} unit).`, "err"); return; }
+  const btn = $("#r-save"); btn.textContent = "Menyimpan…"; btn.disabled = true;
+  try {
+    /* pindahkan baik → rusak secara aman */
+    const ref = doc(db, "barang", rusakId);
+    await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) return;
+      const cb = +snap.data().jumlahBaik || 0;
+      const cr = +snap.data().jumlahRusak || 0;
+      const move = Math.min(n, cb);
+      tx.update(ref, { jumlahBaik: cb - move, jumlahRusak: cr + move, updatedAt: serverTimestamp() });
+    });
+    /* catat di riwayat */
+    await addDoc(collection(db, "riwayat"), {
+      tipe: "rusak", jumlah: n,
+      namaBarang: b.nama, barangId: rusakId, lab: b.lab,
+      satuan: "unit",
+      keterangan: $("#r-ket").value.trim(),
+      tanggal: Timestamp.fromDate(new Date($("#r-tanggal").value)),
+      dicatatOleh: me?.email || "—",
+      createdAt: serverTimestamp(),
+    });
+    toast("Kerusakan tercatat.");
+    closeModal("#m-rusak");
+  } catch (e) { toast("Gagal menyimpan laporan.", "err"); }
+  finally { btn.textContent = "Simpan laporan"; btn.disabled = false; }
+};
 
 /* ════════════ MODAL HELPERS ════════════ */
 function openModal(sel) { $(sel).classList.add("open"); }
@@ -1188,12 +1414,14 @@ function exportBarang() {
     "Jumlah Rusak": +b.jumlahRusak || 0,
     "Lokasi": b.lokasi || "",
     "Tanggal Masuk": b.tanggalMasuk || "",
+    "Tahun Pembelian": b.tahunPembelian || "",
+    "Sumber Dana": b.sumberDana || "",
   }));
   const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [10,10,32,10,10,14,20,11,12,16,14].map(w => ({ wch: w }));
+  ws["!cols"] = [10,10,32,10,10,14,20,11,12,16,14,15,18].map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Barang");
-  XLSX.writeFile(wb, `labdcssh_Inventaris_${labelLab()}_${stamp()}.xlsx`);
+  XLSX.writeFile(wb, `SiLab_Inventaris_${labelLab()}_${stamp()}.xlsx`);
   toast(`${rows.length} barang diekspor.`);
 }
 
@@ -1203,7 +1431,7 @@ function exportRiwayat() {
   if (!rows.length) { toast("Tidak ada transaksi untuk diekspor.", "err"); return; }
   const data = rows.map(r => ({
     "Tanggal": fmtDate(r.tanggal),
-    "Tipe": r.tipe === "masuk" ? "Masuk" : "Keluar",
+    "Tipe": r.tipe === "masuk" ? "Masuk" : r.tipe === "rusak" ? "Rusak" : "Keluar",
     "Nama Barang": r.namaBarang || "",
     "Lab": LAB[r.lab]?.nama || r.lab || "",
     "Jumlah": r.jumlah || 0,
@@ -1215,7 +1443,7 @@ function exportRiwayat() {
   ws["!cols"] = [14,9,32,10,9,10,30,22].map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Riwayat");
-  XLSX.writeFile(wb, `labdcssh_Riwayat_${labelLab()}_${stamp()}.xlsx`);
+  XLSX.writeFile(wb, `SiLab_Riwayat_${labelLab()}_${stamp()}.xlsx`);
   toast(`${rows.length} transaksi diekspor.`);
 }
 
@@ -1275,6 +1503,8 @@ $("#file-import").onchange = async (e) => {
       jumlahRusak: +r["Jumlah Rusak"] || 0,
       lokasi: String(r["Lokasi"] ?? "").trim(),
       tanggalMasuk: normDate(r["Tanggal Masuk"]),
+      tahunPembelian: (() => { const t = parseInt(r["Tahun Pembelian"]); return (t >= 1950 && t <= 2100) ? t : null; })(),
+      sumberDana: String(r["Sumber Dana"] ?? "").trim(),
     });
   }
   if (!rows.length) { toast("Tidak ada baris berisi Nama Barang.", "err"); return; }
@@ -1305,18 +1535,35 @@ $("#file-import").onchange = async (e) => {
     if (!r.noKode) { const gp = GOL[r.golongan] || "BRG", kk = r.lab + "|" + r.golongan; kodeSeq[kk] = (kodeSeq[kk] || 0) + 1; r.noKode = `${gp}-${LAB[r.lab].letter}${String(kodeSeq[kk]).padStart(2, "0")}`; }
   }
 
+  /* samakan penulisan sumber dana dengan daftar yang ada; kumpulkan nama baru */
+  const kanon = {};
+  danaList.forEach(d => { kanon[(d.nama || "").toLowerCase()] = d.nama; });
+  const baruMap = {};
+  for (const r of rows) {
+    if (!r.sumberDana) continue;
+    const k = r.sumberDana.toLowerCase();
+    if (kanon[k]) r.sumberDana = kanon[k];
+    else { baruMap[k] = baruMap[k] || r.sumberDana; r.sumberDana = baruMap[k]; }
+  }
+  const danaBaru = Object.values(baruMap);
+
   /* konfirmasi (destruktif) */
   const ringkasan = targets.map(l => {
     const lama = barang.filter(b => b.lab === l).length;
     const baru = rows.filter(r => r.lab === l).length;
     return `• Lab ${LAB[l].nama}: ${lama} data lama akan dihapus → ${baru} data baru`;
   }).join("\n");
-  if (!confirm(`Import ini akan MENGGANTI seluruh inventaris berikut:\n\n${ringkasan}\n\nData lama dihapus permanen dan tidak bisa dikembalikan. Lanjutkan?`)) return;
+  const catatanDana = !danaBaru.length ? "" :
+    (myLab
+      ? `\n\nSumber dana berikut tidak ada di daftar (tetap tersimpan sebagai teks): ${danaBaru.join(", ")}`
+      : `\n\nSumber dana baru yang akan ditambahkan ke daftar: ${danaBaru.join(", ")}`);
+  if (!confirm(`Import ini akan MENGGANTI seluruh inventaris berikut:\n\n${ringkasan}${catatanDana}\n\nData lama dihapus permanen dan tidak bisa dikembalikan. Lanjutkan?`)) return;
 
   /* susun operasi: hapus lama + tambah baru, jalankan dalam batch */
   const ops = [];
   for (const l of targets) barang.filter(b => b.lab === l).forEach(b => ops.push({ del: b.id }));
   for (const r of rows) ops.push({ add: { ...r, createdAt: serverTimestamp(), updatedAt: serverTimestamp() } });
+  if (!myLab) for (const nm of danaBaru) ops.push({ dana: nm });
 
   const btn = $("#btn-import-inv"); const label = btn.innerHTML;
   btn.innerHTML = "Mengimpor…"; btn.disabled = true;
@@ -1325,6 +1572,7 @@ $("#file-import").onchange = async (e) => {
       const batch = writeBatch(db);
       for (const op of ops.slice(i, i + 450)) {
         if (op.del) batch.delete(doc(db, "barang", op.del));
+        else if (op.dana) batch.set(doc(collection(db, "sumberDana")), { nama: op.dana, createdAt: serverTimestamp() });
         else batch.set(doc(collection(db, "barang")), op.add);
       }
       await batch.commit();
