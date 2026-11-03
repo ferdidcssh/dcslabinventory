@@ -336,7 +336,7 @@
     <div class="login-sub">Sistem Inventaris Laboratorium · SMA Daniel Creative</div>
     <div class="field">
       <label for="in-email">Email</label>
-      <input class="input" id="in-email" type="email" placeholder="nama@silab.com" autocomplete="username">
+      <input class="input" id="in-email" type="email" placeholder="nama@gmail.com" autocomplete="username">
     </div>
     <div class="field">
       <label for="in-pass">Kata sandi</label>
@@ -478,7 +478,7 @@
             <table>
               <thead><tr>
                 <th>No. Induk</th><th>Nama barang</th><th>Golongan</th><th>Lab</th>
-                <th>Merk / ukuran</th><th>Baik</th><th>Rusak</th><th>Lokasi</th><th>Thn. beli</th><th>Sumber dana</th><th></th>
+                <th>Merk / ukuran</th><th>Baik</th><th>Rusak</th><th>Lokasi</th><th>Pembelian</th><th>Sumber dana</th><th></th>
               </tr></thead>
               <tbody id="tb-inventaris"><tr><td colspan="11"><div class="spin"></div></td></tr></tbody>
             </table>
@@ -581,8 +581,8 @@
           <input class="input" id="b-tanggal" type="date">
         </div>
         <div>
-          <label class="fl">Tahun pembelian</label>
-          <input class="input" id="b-tahun" type="number" min="1950" max="2100" placeholder="mis. 2024">
+          <label class="fl">Bulan &amp; tahun pembelian</label>
+          <input class="input" id="b-bulan" type="month" min="1950-01" max="2100-12" placeholder="YYYY-MM">
         </div>
         <div>
           <label class="fl">Sumber dana</label>
@@ -723,7 +723,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, Timestamp, serverTimestamp, runTransaction, writeBatch }
+  onSnapshot, query, orderBy, where, Timestamp, serverTimestamp, runTransaction, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 /* ╔═══════════════════════════════════════════════════════════╗
@@ -739,7 +739,6 @@ const firebaseConfig = {
   appId: "1:389037907173:web:2b06b5c2eed537f71f880c"
 };
 
-
 /* Ambang batas stok bahan dianggap menipis (ubah sesuai kebutuhan) */
 const STOK_MINIMUM_BAHAN = 3;
 
@@ -747,15 +746,28 @@ const STOK_MINIMUM_BAHAN = 3;
    ║  2. DAFTAR PENGGUNA & PERAN                                ║
    ║  Cocokkan email (huruf kecil) dengan lab yang jadi         ║
    ║  tanggung jawabnya. "admin" melihat semua lab.             ║
-   ║  Email yang tidak terdaftar di sini otomatis jadi admin.   ║
+   ║  Email yang TIDAK terdaftar di sini DITOLAK masuk.         ║
    ╚═══════════════════════════════════════════════════════════╝ */
 const PENGGUNA = {
-  "admin@silab.com":    { peran: "admin" },
-  "fisika@silab.com":   { peran: "lab", lab: "fisika"   },
-  "kimia@silab.com":    { peran: "lab", lab: "kimia"    },
-  "biologi@silab.com":  { peran: "lab", lab: "biologi"  },
-  "komputer@silab.com": { peran: "lab", lab: "komputer" },
+  "adminlab@dcssh":    { peran: "admin" },
+  "yodhidcssh@gmail.com":   { peran: "lab", lab: "fisika"   },
+  "ventiedcssh@gmail.com":    { peran: "lab", lab: "kimia"    },
+  "erindcssh@gmail.com":  { peran: "lab", lab: "biologi"  },
+  "ferdidcssh@gmail.com": { peran: "lab", lab: "komputer" },
 };
+
+/* email dicocokkan dalam huruf kecil & tanpa spasi */
+const PENGGUNA_N = {};
+for (const [k, v] of Object.entries(PENGGUNA)) PENGGUNA_N[k.trim().toLowerCase()] = v;
+
+/* Peran sah: "admin", atau "lab" dengan lab yang dikenal. Selain itu → null (ditolak). */
+function resolveProfile(email) {
+  const u = PENGGUNA_N[(email || "").trim().toLowerCase()];
+  if (!u) return null;
+  if (u.peran === "admin") return { peran: "admin", lab: null };
+  if (u.peran === "lab" && LAB[u.lab]) return { peran: "lab", lab: u.lab };
+  return null;
+}
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -776,6 +788,7 @@ let me = null;
 let myLab = null;   // null = admin (semua lab); jika diisi = hanya lab tsb
 let barang = [];
 let danaList = [];   // daftar sumber dana (koleksi Firestore "sumberDana")
+let unsubs = [];     // fungsi berhenti-mendengarkan untuk listener Firestore
 let riwayat = [];
 let editId = null;
 let labFilter = "all";
@@ -795,6 +808,40 @@ function fmtDate(ts) {
 }
 function todayISO() { return new Date().toISOString().split("T")[0]; }
 function longDate() { const d = new Date(); return `${HARI[d.getDay()]}, ${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`; }
+
+/* ── Bulan & tahun pembelian: disimpan "YYYY-MM" ── */
+const BULAN_NAMA = [
+  ["januari","jan","january"],["februari","pebruari","feb","february"],["maret","mar","march"],
+  ["april","apr"],["mei","may"],["juni","jun","june"],["juli","jul","july"],
+  ["agustus","agu","agt","aug","august"],["september","sep","sept"],["oktober","okt","oct","october"],
+  ["november","nov","nopember"],["desember","des","dec","december"],
+];
+/* "" = kosong · null = tidak terbaca · "YYYY-MM" = valid */
+function parseBulan(v) {
+  if (v == null || v === "") return "";
+  const ok = (y, m) => (y >= 1950 && y <= 2100 && m >= 1 && m <= 12) ? `${y}-${String(m).padStart(2, "0")}` : null;
+  if (v instanceof Date) { const d = new Date(v.getTime() + 12 * 3600 * 1000); return ok(d.getFullYear(), d.getMonth() + 1); }
+  if (typeof v === "number") {
+    if (v >= 1950 && v <= 2100) return null;                 // hanya tahun → bulan tidak diketahui
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000) + 12 * 3600 * 1000);  // serial Excel
+    return ok(d.getUTCFullYear(), d.getUTCMonth() + 1);
+  }
+  const s = String(v).trim().toLowerCase();
+  let m;
+  if ((m = s.match(/^(\d{4})[-\/.](\d{1,2})(?:[-\/.]\d{1,2})?$/))) return ok(+m[1], +m[2]);   // 2024-03 · 2024/3 · 2024-03-15
+  if ((m = s.match(/^(\d{1,2})[-\/.](\d{4})$/))) return ok(+m[2], +m[1]);                      // 03/2024
+  if ((m = s.match(/^([a-z]+)\.?\s+(\d{4})$/))) {                                              // Maret 2024 · Mar 2024
+    const i = BULAN_NAMA.findIndex(n => n.includes(m[1]));
+    return i >= 0 ? ok(+m[2], i + 1) : null;
+  }
+  return null;
+}
+function bulanOf(b) { return b.bulanPembelian || (b.tahunPembelian ? String(b.tahunPembelian) : ""); }   // tahunPembelian = data lama (hanya tahun)
+function fmtBulan(v) {
+  if (!v) return "—";
+  const m = String(v).match(/^(\d{4})-(\d{2})$/);
+  return m ? `${BLN[+m[2] - 1]} ${m[1]}` : String(v);
+}
 
 function toast(msg, kind = "ok") {
   const t = $("#toast");
@@ -862,16 +909,24 @@ $("#btn-logout").onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
   if (user) {
+    const prof = resolveProfile(user.email);
+    if (!prof) {   // akun belum didaftarkan → tolak (BUKAN otomatis admin)
+      stopListening();
+      $("#login-msg").textContent = `Akun ${user.email} belum terdaftar di SiLab. Minta admin menambahkan email ini ke daftar PENGGUNA.`;
+      signOut(auth);
+      return;
+    }
     me = user;
     $("#login").style.display = "none";
     $("#app").style.display = "grid";
     const nm = (user.email || "").split("@")[0];
     $("#u-name").textContent = nm;
     $("#u-ava").textContent = (nm[0] || "?").toUpperCase();
-    applyScope(user.email);
+    applyScope(prof);
     listen();
   } else {
-    me = null;
+    me = null; myLab = null;
+    stopListening();
     $("#login").style.display = "grid";
     $("#app").style.display = "none";
     $("#in-email").value = ""; $("#in-pass").value = "";
@@ -879,9 +934,8 @@ onAuthStateChanged(auth, user => {
 });
 
 /* ── terapkan peran: admin (semua) atau penanggung jawab satu lab ── */
-function applyScope(email) {
-  const u = PENGGUNA[(email || "").toLowerCase()];
-  myLab = (u && u.peran === "lab") ? u.lab : null;
+function applyScope(prof) {
+  myLab = prof.peran === "lab" ? prof.lab : null;
   const isLab = !!myLab;
 
   // sidebar: sembunyikan grup pilihan lab bagi penanggung jawab tunggal
@@ -951,23 +1005,40 @@ $$("#labtabs-r .labtab").forEach(t => t.onclick = () => {
 });
 
 /* ════════════ REALTIME ════════════ */
-function listen() {
-  onSnapshot(query(collection(db, "barang"), orderBy("nama")), snap => {
-    barang = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderInv(); renderDash(); fillBarangSelect();
-  }, err => toast("Gagal memuat data barang.", "err"));
+function stopListening() {
+  unsubs.forEach(f => { try { f(); } catch (e) {} });
+  unsubs = []; barang = []; riwayat = []; danaList = [];
+}
 
-  onSnapshot(query(collection(db, "sumberDana"), orderBy("nama")), snap => {
+/* Akun lab hanya MEMUAT data lab-nya sendiri (bukan sekadar disaring di layar).
+   Query where("lab","==") tanpa orderBy tidak butuh index; urutan dibuat di sisi app. */
+function listen() {
+  stopListening();
+  const byNama = (a, b) => (a.nama || "").localeCompare(b.nama || "", "id");
+  const tms = r => (r.tanggal && r.tanggal.toMillis) ? r.tanggal.toMillis() : 0;
+
+  const qBarang = myLab
+    ? query(collection(db, "barang"), where("lab", "==", myLab))
+    : query(collection(db, "barang"), orderBy("nama"));
+  unsubs.push(onSnapshot(qBarang, snap => {
+    barang = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort(byNama);
+    renderInv(); renderDash(); fillBarangSelect();
+  }, err => toast("Gagal memuat data barang.", "err")));
+
+  unsubs.push(onSnapshot(query(collection(db, "sumberDana"), orderBy("nama")), snap => {
     danaList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     fillDanaSelect($("#b-dana").value);
     renderDanaList();
     renderInv();
-  }, err => toast("Gagal memuat daftar sumber dana.", "err"));
+  }, err => toast("Gagal memuat daftar sumber dana.", "err")));
 
-  onSnapshot(query(collection(db, "riwayat"), orderBy("tanggal", "desc")), snap => {
-    riwayat = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const qRiwayat = myLab
+    ? query(collection(db, "riwayat"), where("lab", "==", myLab))
+    : query(collection(db, "riwayat"), orderBy("tanggal", "desc"));
+  unsubs.push(onSnapshot(qRiwayat, snap => {
+    riwayat = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => tms(b) - tms(a));
     renderRiw(); renderDash();
-  }, err => toast("Gagal memuat riwayat.", "err"));
+  }, err => toast("Gagal memuat riwayat.", "err")));
 }
 
 /* ════════════ DASHBOARD ════════════ */
@@ -1032,7 +1103,7 @@ function filteredBarang() {
   const kd = $("#q-kondisi").value;
   let rows = barang.slice();
   if (labFilter !== "all") rows = rows.filter(b => b.lab === labFilter);
-  if (q)  rows = rows.filter(b => [b.nama, b.noInduk, b.noKode, b.merk, b.sumberDana, String(b.tahunPembelian||"")].some(v => (v||"").toLowerCase().includes(q)));
+  if (q)  rows = rows.filter(b => [b.nama, b.noInduk, b.noKode, b.merk, b.sumberDana, fmtBulan(bulanOf(b)), String(bulanOf(b))].some(v => (v||"").toLowerCase().includes(q)));
   if (gl) rows = rows.filter(b => b.golongan === gl);
   if (kd === "baik")  rows = rows.filter(b => (+b.jumlahBaik||0) > 0 && (+b.jumlahRusak||0) === 0);
   if (kd === "rusak") rows = rows.filter(b => (+b.jumlahRusak||0) > 0);
@@ -1061,7 +1132,7 @@ function renderInv() {
       <td><span class="num ${baik>0?'good':'zero'}">${baik}</span></td>
       <td><span class="num ${rusak>0?'bad':'zero'}">${rusak}</span></td>
       <td class="cell-spec">${esc(b.lokasi || "—")}</td>
-      <td class="cell-spec">${esc(b.tahunPembelian || "—")}</td>
+      <td class="cell-spec">${esc(fmtBulan(bulanOf(b)))}</td>
       <td class="cell-spec">${esc(b.sumberDana || "—")}</td>
       <td><div class="row-actions">
         <button class="icon-btn" title="Riwayat" data-hist="${b.id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 106 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></button>
@@ -1133,7 +1204,7 @@ function openBarang(id) {
     set("#b-merk", b.merk); set("#b-ukuran", b.ukuran);
     set("#b-baik", b.jumlahBaik ?? 0); set("#b-rusak", b.jumlahRusak ?? 0);
     set("#b-lokasi", b.lokasi); set("#b-tanggal", b.tanggalMasuk || todayISO());
-    set("#b-tahun", b.tahunPembelian ?? "");
+    set("#b-bulan", b.bulanPembelian || "");
     fillDanaSelect(b.sumberDana || "");
   } else {
     $("#m-barang-title").textContent = "Tambah barang";
@@ -1141,7 +1212,7 @@ function openBarang(id) {
     $("#b-lab").value = myLab || (labFilter !== "all" ? labFilter : "fisika");
     $("#b-golongan").value = "Barang";
     set("#b-baik", 0); set("#b-rusak", 0); set("#b-tanggal", todayISO());
-    set("#b-tahun", "");
+    set("#b-bulan", "");
     fillDanaSelect("");
     refreshCodes();
   }
@@ -1151,9 +1222,9 @@ function openBarang(id) {
 $("#b-save").onclick = async () => {
   const nama = $("#b-nama").value.trim();
   if (!nama) { toast("Nama barang wajib diisi.", "err"); return; }
-  const tahunRaw = $("#b-tahun").value.trim();
-  const tahun = tahunRaw ? parseInt(tahunRaw) : null;
-  if (tahunRaw && (!(tahun >= 1950 && tahun <= 2100))) { toast("Tahun pembelian tidak valid (1950–2100).", "err"); return; }
+  const bulanRaw = $("#b-bulan").value.trim();
+  const bulan = bulanRaw ? parseBulan(bulanRaw) : null;
+  if (bulanRaw && !bulan) { toast("Bulan pembelian tidak valid. Gunakan format YYYY-MM, mis. 2024-03.", "err"); return; }
   const data = {
     nama,
     lab: $("#b-lab").value,
@@ -1166,7 +1237,7 @@ $("#b-save").onclick = async () => {
     jumlahRusak: +$("#b-rusak").value || 0,
     lokasi: $("#b-lokasi").value.trim(),
     tanggalMasuk: $("#b-tanggal").value,
-    tahunPembelian: tahun,
+    bulanPembelian: bulan,
     sumberDana: $("#b-dana").value || "",
     updatedAt: serverTimestamp(),
   };
@@ -1283,9 +1354,14 @@ function renderDanaList() {
   box.querySelectorAll("[data-dana-del]").forEach(b => b.onclick = () => hapusDana(b.dataset.danaDel));
 }
 
+function hanyaAdmin() {
+  if (myLab) { toast("Hanya admin yang dapat mengelola sumber dana.", "err"); return false; }
+  return true;
+}
 const danaAda = (nm, exceptId) => danaList.some(x => x.id !== exceptId && (x.nama || "").toLowerCase() === nm.toLowerCase());
 
 async function tambahDana() {
+  if (!hanyaAdmin()) return;
   const nm = $("#dana-baru").value.trim();
   if (!nm) { toast("Nama sumber dana tidak boleh kosong.", "err"); return; }
   if (danaAda(nm)) { toast("Sumber dana itu sudah ada.", "err"); return; }
@@ -1297,6 +1373,7 @@ async function tambahDana() {
 }
 
 async function renameDana(id) {
+  if (!hanyaAdmin()) return;
   const d = danaList.find(x => x.id === id); if (!d) return;
   const input = prompt("Ubah nama sumber dana:", d.nama);
   if (input === null) return;
@@ -1317,6 +1394,7 @@ async function renameDana(id) {
 }
 
 async function hapusDana(id) {
+  if (!hanyaAdmin()) return;
   const d = danaList.find(x => x.id === id); if (!d) return;
   const n = barang.filter(b => b.sumberDana === d.nama).length;
   const info = n ? `\n\n${n} barang masih memakai sumber dana ini. Data barang tidak diubah, tetapi nama ini tidak lagi muncul di pilihan.` : "";
@@ -1325,7 +1403,7 @@ async function hapusDana(id) {
   catch (e) { toast("Gagal menghapus sumber dana.", "err"); }
 }
 
-$("#btn-kelola-dana").onclick = () => { renderDanaList(); openModal("#m-dana"); };
+$("#btn-kelola-dana").onclick = () => { if (!hanyaAdmin()) return; renderDanaList(); openModal("#m-dana"); };
 $("#dana-tambah").onclick = tambahDana;
 $("#dana-baru").addEventListener("keydown", e => { if (e.key === "Enter") tambahDana(); });
 
@@ -1414,7 +1492,7 @@ function exportBarang() {
     "Jumlah Rusak": +b.jumlahRusak || 0,
     "Lokasi": b.lokasi || "",
     "Tanggal Masuk": b.tanggalMasuk || "",
-    "Tahun Pembelian": b.tahunPembelian || "",
+    "Bulan Pembelian": bulanOf(b),
     "Sumber Dana": b.sumberDana || "",
   }));
   const ws = XLSX.utils.json_to_sheet(data);
@@ -1463,10 +1541,11 @@ function normGol(v) {
 }
 function normDate(v) {
   if (v == null || v === "") return "";
-  if (v instanceof Date) return v.toISOString().split("T")[0];
+  const p2 = n => String(n).padStart(2, "0");
+  if (v instanceof Date) { const d = new Date(v.getTime() + 12 * 3600 * 1000); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`; }
   if (typeof v === "number") { // serial Excel → tanggal
-    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
-    return isNaN(d) ? "" : d.toISOString().split("T")[0];
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000) + 12 * 3600 * 1000);
+    return isNaN(d) ? "" : `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())}`;
   }
   return String(v).trim();
 }
@@ -1488,9 +1567,12 @@ $("#file-import").onchange = async (e) => {
 
   /* petakan baris → objek barang */
   let rows = [];
+  let bulanTakTerbaca = 0;
   for (const r of raw) {
     const nama = String(r["Nama Barang"] ?? r["nama"] ?? "").trim();
     if (!nama) continue;
+    const bp = parseBulan(r["Bulan Pembelian"]);
+    if (bp === null) bulanTakTerbaca++;
     rows.push({
       noInduk: String(r["No. Induk"] ?? "").trim(),
       noKode:  String(r["No. Kode"] ?? "").trim(),
@@ -1503,7 +1585,7 @@ $("#file-import").onchange = async (e) => {
       jumlahRusak: +r["Jumlah Rusak"] || 0,
       lokasi: String(r["Lokasi"] ?? "").trim(),
       tanggalMasuk: normDate(r["Tanggal Masuk"]),
-      tahunPembelian: (() => { const t = parseInt(r["Tahun Pembelian"]); return (t >= 1950 && t <= 2100) ? t : null; })(),
+      bulanPembelian: bp || null,
       sumberDana: String(r["Sumber Dana"] ?? "").trim(),
     });
   }
@@ -1557,7 +1639,8 @@ $("#file-import").onchange = async (e) => {
     (myLab
       ? `\n\nSumber dana berikut tidak ada di daftar (tetap tersimpan sebagai teks): ${danaBaru.join(", ")}`
       : `\n\nSumber dana baru yang akan ditambahkan ke daftar: ${danaBaru.join(", ")}`);
-  if (!confirm(`Import ini akan MENGGANTI seluruh inventaris berikut:\n\n${ringkasan}${catatanDana}\n\nData lama dihapus permanen dan tidak bisa dikembalikan. Lanjutkan?`)) return;
+  const catatanBulan = bulanTakTerbaca ? `\n\n${bulanTakTerbaca} baris punya Bulan Pembelian yang tidak terbaca dan akan dikosongkan (format yang benar: 2024-03).` : "";
+  if (!confirm(`Import ini akan MENGGANTI seluruh inventaris berikut:\n\n${ringkasan}${catatanDana}${catatanBulan}\n\nData lama dihapus permanen dan tidak bisa dikembalikan. Lanjutkan?`)) return;
 
   /* susun operasi: hapus lama + tambah baru, jalankan dalam batch */
   const ops = [];
